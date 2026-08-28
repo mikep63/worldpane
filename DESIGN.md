@@ -471,19 +471,57 @@ expect it but leave the grey-line window starting at a stated 2° that is really
 
 # Deferred, not decided
 
+Roughly in the order they should be taken. The first two are gaps in what has
+already shipped rather than new features, which is why they come before
+satellites.
+
+- **The About page does not exist, and this document promises one.** *"Do not
+  let the About page claim otherwise. Link all of them, prominently"* — nothing
+  in the app credits Elwood Downey (WB0OEW, SK January 2026) or links
+  OpenHamClock, HamPulse, HAMSignal and the rest. The settings colophon covers
+  data attribution only. This is a stated intention currently being quietly
+  broken, it is small, and it should be first. Whoever finds this should reach
+  the real HamClock's continuations in one tap.
+- **No offline caching, which a wall display eventually needs.** A page already
+  loaded survives a network drop: sun times and the terminator are pure local
+  maths, and space weather degrades to stale by design. But a **reload** without
+  network fails — `map.js` fetches `data/coastline.json`, and without it the map
+  is replaced by "Coastline unavailable". For something meant to run unattended
+  for months on shack wifi, a service worker caching the shell and the coastline
+  closes the last real fragility. `baseball-records` already does this; copy its
+  shape rather than inventing one.
+- **No README, and the repository is public.** Anyone who finds it gets no
+  explanation of what it is or how to run the checks.
 - **Satellites.** PLAN.md made them the feature that earned a home-screen slot,
   which was a phone argument. On an always-on display they are most of the code
   and the least of the glanceable value. CelesTrak's amateur group is CORS-open
   and returns **96 satellites**; near-Earth SGP4 stays the right scope when it
-  happens. v2.
+  happens.
+
+  PLAN.md's sub-question survives and is still open: **which satellites ship by
+  default?** Its own answer was ISS, the SO-50/AO-91/AO-92 class, and the current
+  linear transponders, with the rest opt-in — the full amateur set is long and
+  mostly uninteresting.
 - **hamqsl and prop.kc2g.com licensing.** Now reachable via the Action, but
   reachable is not the same as permitted. N0NBH publishes the solar XML for
   embedding; republishing a normalised derivative is a different act. Check
   terms with both before shipping either.
-- **Whether the Action is needed for v1 at all.** Everything in the first slice
-  is either pure maths or a CORS-open NOAA endpoint, the largest of which is
-  **47 bytes**. The Action is insulation against format changes and rate limits,
-  which matters at v2 scale; v1 may not need it yet.
+- **Whether the Action is needed at all.** The first slice did not need it:
+  everything is either pure maths or a CORS-open NOAA endpoint, the largest of
+  which is **47 bytes**. It becomes insulation worth having once TLEs and a
+  second source are in play — and CelesTrak explicitly asks not to be hammered
+  by many individual clients, which is an argument that only starts to apply
+  when more than one person is running this.
+- **Bands return to settings when there is something band-specific to show.**
+  Recorded in "A gear icon" as the condition for undoing that cut. The obvious
+  trigger is a band-conditions readout derived from SFI and Kp — honest if
+  labelled as derived, and it would give the setting meaning. Declined for v1 as
+  beyond the first slice, not rejected.
+
+**Closed rather than pending**, so they are not picked back up: PLAN.md's
+**widget sizes** and **notification policy** both died with the phone-widget
+thesis, and its question about **openhamclock's browser build** is answered — it
+is real, hosted and live.
 
 ---
 
