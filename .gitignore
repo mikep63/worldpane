@@ -1,0 +1,8 @@
+# The raw Natural Earth download. ne_50m_coastline is ~1.6 MB of GeoJSON at
+# six decimal places, and DESIGN.md's rule is that it never ships -- the build
+# step rounds it to 2dp (~261 KB gzipped) and commits that instead. Regenerable,
+# and Natural Earth changes rarely enough that pinning a copy buys nothing.
+data/raw/
+
+__pycache__/
+.DS_Store
