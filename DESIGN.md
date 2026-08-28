@@ -1,6 +1,6 @@
 <!--
 SPDX-FileCopyrightText: 2026 Mike Parker <mike@rsbl.org>
-SPDX-License-Identifier: LicenseRef-AllRightsReserved
+SPDX-License-Identifier: MIT
 -->
 
 # Design decisions

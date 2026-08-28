@@ -1,0 +1,61 @@
+This repository contains two separately licensed things: the software, and the
+third-party material it bundles.
+
+================================================================================
+1. THE SOFTWARE  —  MIT License
+================================================================================
+
+Applies to everything written for this project: index.html, css/style.css,
+everything in js/ except vendor/, everything in spec/ and tools/, and the
+documentation (DESIGN.md, PLAN.md, README.md).
+
+Copyright (c) 2026 Mike Parker
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+================================================================================
+2. BUNDLED THIRD-PARTY MATERIAL
+================================================================================
+
+vendor/astronomy.js
+    astronomy-engine 2.1.19 by Don Cross <cosinekitty@gmail.com>
+    https://github.com/cosinekitty/astronomy
+    MIT License, Copyright (c) 2019-2023 Don Cross.
+    Vendored unmodified; the full licence text is embedded at the top of the
+    file and must stay there.
+
+data/coastline.json
+    Derived from Natural Earth's 1:50m coastline
+    https://www.naturalearthdata.com/
+    Public domain. Natural Earth asks for no attribution and grants no
+    warranty; this project credits it anyway, on the settings page.
+
+    The file is not a verbatim copy: tools/build_coastline.py rounds every
+    coordinate to two decimal places and re-encodes it. Public domain source,
+    so the derivative carries no obligation, and it is covered by section 1
+    above as part of this repository.
+
+================================================================================
+3. NOT BUNDLED
+================================================================================
+
+Space weather is read live from NOAA's Space Weather Prediction Center
+(services.swpc.noaa.gov). Nothing from it is stored or redistributed here. As
+a work of the United States government it is in the public domain, but this
+project makes no claim over it and speaks for none of it.
