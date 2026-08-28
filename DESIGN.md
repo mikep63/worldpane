@@ -424,6 +424,32 @@ The number is arguable and someone will argue it. What matters is that the app
 states which convention it uses rather than presenting a countdown as though the
 boundary were physical.
 
+## Grey line is geometric altitude; sunrise is not · 2026-08-28
+
+Two altitude conventions live side by side, deliberately. Found while building,
+because the first version searched for one and measured the other.
+
+**The grey line uses geometric altitude.** `SearchAltitude`, which solves every
+grey-line time, works geometrically: ask it for 2° and the instant it returns is
+2.0000° geometric but **2.28° apparent**, because `Horizon(…, 'normal')` adds
+refraction. Measuring with refraction on would mean the window did not begin
+where the convention says it does. Beyond the arithmetic, refraction bends the
+light an observer sees; it does not move the boundary of solar illumination in
+the ionosphere, which is what the grey line is about.
+
+**Sunrise and sunset keep the standard refracted definition** — upper limb,
+refracted, which `SearchRiseSet` places at about **−0.83° geometric** (−0.567°
+refraction plus −0.267° of solar semidiameter). Quoting sunrise any other way
+would disagree with every almanac and weather app the reader owns.
+
+So the same screen shows a grey line measured one way and a sunset measured
+another. That is correct, and both are pinned in `spec/check_sun.mjs` so a
+later tidy-up that unifies them fails loudly.
+
+Rejected: **making both apparent.** It would put sunrise back where people
+expect it but leave the grey-line window starting at a stated 2° that is really
+2.28°, which is the error that was there to begin with.
+
 ---
 
 # Deferred, not decided
