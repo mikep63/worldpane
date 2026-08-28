@@ -15,7 +15,8 @@ import * as settings from './settings.js';
 import * as theme from './theme.js';
 import * as render from './render.js';
 
-const CLOCK_MS = 1000;
+// The clock re-arms itself on each second boundary rather than on an interval;
+// see scheduleClock.
 const MAP_MS = 60 * 1000;
 const SWX_MS = 15 * 60 * 1000;
 
@@ -118,6 +119,23 @@ function drawMap(now) {
 
 function tickClock() {
   render.renderClocks(new Date());
+}
+
+/**
+ * Re-arm the clock on the next second boundary rather than every 1000 ms.
+ *
+ * setInterval drifts -- the browser only promises "not before" -- and the error
+ * accumulates. With minutes on screen nobody could tell; with seconds showing,
+ * a drifted timer visibly skips a second or holds one for two ticks. Measuring
+ * the remainder each time makes the display self-correcting no matter how long
+ * a frame took or how long the tab was throttled.
+ *
+ * The small margin past the boundary avoids firing a millisecond early and
+ * painting the second that is just ending.
+ */
+function scheduleClock() {
+  tickClock();
+  setTimeout(scheduleClock, 1000 - (Date.now() % 1000) + 8);
 }
 
 function tickMap() {
@@ -223,7 +241,7 @@ async function start() {
     tickSpaceWeather();
   }
 
-  setInterval(tickClock, CLOCK_MS);
+  scheduleClock();
   setInterval(() => settings.isConfigured(state.settings) && tickMap(), MAP_MS);
   setInterval(() => settings.isConfigured(state.settings) && tickSpaceWeather(), SWX_MS);
 

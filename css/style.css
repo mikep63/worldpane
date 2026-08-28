@@ -134,6 +134,16 @@ body {
 }
 
 .big  { margin: 0; font-size: clamp(2.2rem, 7vh, 3.6rem); font-weight: 600; line-height: 1; }
+
+/* Seconds ride along at roughly half height so the minute stays the thing you
+   read from across the room, with the second available when you walk up. */
+.sec {
+  font-size: 0.46em;
+  font-weight: 500;
+  color: var(--ink-dim);
+  margin-left: 0.06em;
+  vertical-align: baseline;
+}
 .mid  { margin: 0.45rem 0 0; font-size: clamp(1.3rem, 4vh, 2rem); font-weight: 500; line-height: 1; color: var(--ink-mid); }
 .sub  { margin: 0.15rem 0 0; font-size: 0.74rem; letter-spacing: 0.07em; text-transform: uppercase; color: var(--ink-dim); }
 

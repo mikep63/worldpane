@@ -20,6 +20,20 @@ export function hhmm(date, { utc = false } = {}) {
 }
 
 /**
+ * Seconds, as ":07", to sit alongside hhmm rather than inside it.
+ *
+ * Kept separate so the display can set them smaller than the hours and
+ * minutes. Folding them into one string would make the big number half again
+ * as wide and cost legibility across a room, to show the digit that matters
+ * least at that distance -- while still being there when you walk up to it.
+ */
+export function ss(date, { utc = false } = {}) {
+  if (!(date instanceof Date) || Number.isNaN(date.getTime())) return ':--';
+  const s = utc ? date.getUTCSeconds() : date.getSeconds();
+  return `:${String(s).padStart(2, '0')}`;
+}
+
+/**
  * A duration in words, rounded the way someone reading across a room needs it.
  *
  * Minutes up to two hours, then hours. Below a minute it says "now" rather than
@@ -79,6 +93,9 @@ export function trim(n) {
 
 export function renderClocks(now) {
   $('utc').textContent = hhmm(now, { utc: true });
+  $('utc-sec').textContent = ss(now, { utc: true });
+  // Local carries no seconds: UTC is the operating clock and the one worth
+  // reading to the second, local answers "what time is it really".
   $('local').textContent = hhmm(now);
   const zone = Intl.DateTimeFormat().resolvedOptions().timeZone;
   $('local-label').textContent = zone ? zone.split('/').pop().replace(/_/g, ' ') : 'Local';

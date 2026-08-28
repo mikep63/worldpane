@@ -7,7 +7,7 @@
 // wrong way, or a stale reading that reads as fresh. The DOM functions in the
 // same file are verified by looking at the page.
 
-import { hhmm, duration, age, greyLineText, kpTrendText, trim } from '../js/render.js';
+import { hhmm, ss, duration, age, greyLineText, kpTrendText, trim } from '../js/render.js';
 
 let failures = 0;
 function check(name, got, want) {
@@ -25,6 +25,12 @@ check('utc pads', hhmm(at('2026-08-28T07:05:00Z'), { utc: true }), '07:05');
 check('utc last minute', hhmm(at('2026-08-28T23:59:00Z'), { utc: true }), '23:59');
 check('bad date', hhmm(new Date('nonsense'), { utc: true }), '--:--');
 check('not a date', hhmm(null), '--:--');
+
+// Seconds are a separate element so they can be set smaller than the minutes.
+check('seconds pad', ss(at('2026-08-28T07:05:03Z'), { utc: true }), ':03');
+check('seconds top of minute', ss(at('2026-08-28T07:05:00Z'), { utc: true }), ':00');
+check('seconds last', ss(at('2026-08-28T07:05:59Z'), { utc: true }), ':59');
+check('seconds bad date', ss(new Date('nonsense'), { utc: true }), ':--');
 
 // --- durations --------------------------------------------------------------
 check('under a minute is now', duration(20000), 'now');
