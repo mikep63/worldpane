@@ -19,10 +19,27 @@ This is **Worldpane** — an always-on amateur radio display for a wall-mounted
 iPad: day/night terminator, sun times, and space weather, read from across the
 shack.
 
-**Status: revived 2026-08-27, named 2026-08-28.** Still no code. `PLAN.md` is the
-historical record from when this was `bandwatch` — its research is reusable and
-most of its decisions survive intact, but its name and platform choice do not.
-Where the two disagree, this file wins.
+**Status: first slice running as of 2026-08-28.** Settings, clocks, sun times
+with the grey-line countdown, the terminator map, and the three NOAA numbers.
+Satellites and the scheduled Action are still deferred.
+
+`PLAN.md` is the historical record from when this was `bandwatch` — its research
+is reusable and most of its decisions survive intact, but its name and platform
+choice do not. Where the two disagree, this file wins.
+
+**Checks.** Five spec files run under the JavaScriptCore shell that ships with
+macOS, since there is no `node` here:
+
+```sh
+JSC=/System/Library/Frameworks/JavaScriptCore.framework/Versions/A/Helpers/jsc
+for s in grid sun terminator map render; do $JSC -m spec/check_$s.mjs || break; done
+python3 -m http.server 8080     # then open http://127.0.0.1:8080
+```
+
+They check against physics and geometry rather than against previous output:
+solstice declinations, 15°/hour subsolar drift, the terminator touching the
+polar circles, and — the strongest one — the closed-form terminator agreeing
+with astronomy-engine's solar altitude to within 0.02° across four dates.
 
 ---
 
