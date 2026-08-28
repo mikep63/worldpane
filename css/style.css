@@ -1,0 +1,306 @@
+/* Worldpane — a shack display read from two or three metres.
+ *
+ * Light and dark are designed as equals, not one inverted into the other: this
+ * runs all day and all night and spends half its life in each. Both palettes
+ * are defined as tokens and everything below is written against the tokens, so
+ * neither theme can be half-applied.
+ *
+ * No web fonts. The display has to keep working when the network does not, and
+ * a font that fails to load is a layout that reflows on a wall. */
+
+:root,
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg:        #0b0f14;
+  --panel:     #121821;
+  --rule:      #1f2935;
+  --ink:       #e9eff6;
+  --ink-mid:   #a7b7c8;
+  --ink-dim:   #6c7d8f;
+  --quiet:     #58b57c;
+  --unsettled: #e0a33a;
+  --storm:     #e4635e;
+  --station:   #ff6b4a;
+  /* Read by main.js and handed to the canvas, so map and page never drift. */
+  --map-day:   #16202b;
+  --map-night: #070a0e;
+  --map-coast: #4f7fa6;
+}
+
+:root[data-theme="light"] {
+  color-scheme: light;
+  --bg:        #eceff3;
+  --panel:     #ffffff;
+  --rule:      #d5dde5;
+  --ink:       #0e1620;
+  --ink-mid:   #47576a;
+  --ink-dim:   #6f8093;
+  --quiet:     #1d7a45;
+  --unsettled: #9a6208;
+  --storm:     #b32d28;
+  --station:   #d63a17;
+  --map-day:   #dce8f2;
+  --map-night: #8fa3b6;
+  --map-coast: #3c5f7d;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-size: 16px;
+  line-height: 1.35;
+  -webkit-font-smoothing: antialiased;
+  overflow: hidden; /* a wall display never scrolls */
+}
+
+[hidden] { display: none !important; }
+
+.num {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+  letter-spacing: -0.01em;
+}
+
+/* ---------- dashboard ---------------------------------------------------- */
+
+#dashboard {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  position: relative;
+}
+
+.map-wrap {
+  position: relative;
+  flex: 0 0 auto;
+  background: var(--map-day);
+  border-bottom: 1px solid var(--rule);
+}
+
+#map {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.caption {
+  margin: 0;
+  font-size: 0.75rem;
+  color: var(--ink-dim);
+}
+
+.map-wrap .caption {
+  position: absolute;
+  right: 0.6rem;
+  bottom: 0.4rem;
+  background: color-mix(in srgb, var(--bg) 70%, transparent);
+  padding: 0.1rem 0.4rem;
+  border-radius: 3px;
+}
+
+.strip {
+  flex: 1 1 auto;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1px;
+  background: var(--rule);
+  min-height: 0;
+}
+
+.group {
+  background: var(--panel);
+  padding: 0.9rem 1.1rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-width: 0;
+}
+
+.label {
+  margin: 0 0 0.5rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+}
+
+.big  { margin: 0; font-size: clamp(2.2rem, 7vh, 3.6rem); font-weight: 600; line-height: 1; }
+.mid  { margin: 0.45rem 0 0; font-size: clamp(1.3rem, 4vh, 2rem); font-weight: 500; line-height: 1; color: var(--ink-mid); }
+.sub  { margin: 0.15rem 0 0; font-size: 0.74rem; letter-spacing: 0.07em; text-transform: uppercase; color: var(--ink-dim); }
+
+.rows { margin: 0; }
+.rows > div {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 1rem;
+  padding: 0.18rem 0;
+}
+.rows dt { color: var(--ink-mid); font-size: 0.95rem; }
+.rows dd { margin: 0; font-size: clamp(1.1rem, 3vh, 1.6rem); font-weight: 500; }
+
+.grey {
+  margin: 0.6rem 0 0;
+  font-size: 0.95rem;
+  color: var(--ink-mid);
+}
+.grey strong { color: var(--ink); font-weight: 600; }
+.grey.active strong { color: var(--unsettled); }
+
+.tiles { display: flex; gap: 1.1rem; }
+.tile { flex: 1 1 0; min-width: 0; }
+.tile .big { font-size: clamp(1.6rem, 5.2vh, 2.7rem); }
+
+.tile[data-band="quiet"]     .big { color: var(--quiet); }
+.tile[data-band="unsettled"] .big { color: var(--unsettled); }
+.tile[data-band="storm"]     .big { color: var(--storm); }
+.tile[data-band="unknown"]   .big { color: var(--ink-dim); }
+
+.callsign {
+  position: absolute;
+  left: 0.9rem;
+  top: 0.7rem;
+  margin: 0;
+  font-size: 0.85rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  color: var(--ink-mid);
+  text-shadow: 0 1px 3px var(--bg);
+}
+
+.gear {
+  position: absolute;
+  right: 0.5rem;
+  top: 0.4rem;
+  display: grid;
+  place-items: center;
+  width: 44px;   /* a real touch target, per Apple's minimum */
+  height: 44px;
+  color: var(--ink-dim);
+  text-decoration: none;
+  border-radius: 50%;
+}
+.gear:hover, .gear:focus-visible { color: var(--ink); }
+
+/* ---------- settings ----------------------------------------------------- */
+
+#settings {
+  height: 100%;
+  overflow-y: auto;
+  display: grid;
+  place-items: start center;
+  padding: 2rem 1rem 3rem;
+}
+
+.sheet {
+  width: min(34rem, 100%);
+  background: var(--panel);
+  border: 1px solid var(--rule);
+  border-radius: 10px;
+  padding: 1.6rem 1.7rem 1.4rem;
+}
+
+.sheet h1 { margin: 0 0 0.3rem; font-size: 1.5rem; letter-spacing: -0.01em; }
+.intro { margin: 0 0 1.4rem; color: var(--ink-mid); }
+
+label {
+  display: block;
+  margin: 0 0 0.3rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+}
+.optional { font-weight: 400; text-transform: none; letter-spacing: 0; }
+
+input[type="text"], input:not([type]) {
+  width: 100%;
+  padding: 0.65rem 0.7rem;
+  font: inherit;
+  font-size: 1.15rem;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.06em;
+  color: var(--ink);
+  background: var(--bg);
+  border: 1px solid var(--rule);
+  border-radius: 6px;
+}
+input:focus-visible, button:focus-visible, a:focus-visible {
+  outline: 2px solid var(--station);
+  outline-offset: 2px;
+}
+input[aria-invalid="true"] { border-color: var(--storm); }
+
+.hint { margin: 0.4rem 0 1.2rem; font-size: 0.85rem; color: var(--ink-dim); }
+.hint.error { color: var(--storm); }
+
+fieldset { margin: 0 0 1.2rem; padding: 0; border: 0; }
+legend {
+  padding: 0;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+}
+.choices { display: flex; gap: 1.2rem; margin: 0.5rem 0 0; }
+.choices label {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 400;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--ink);
+}
+
+.actions { display: flex; align-items: center; gap: 1rem; margin-top: 0.4rem; }
+
+button.primary {
+  font: inherit;
+  font-weight: 600;
+  padding: 0.6rem 1.4rem;
+  color: var(--bg);
+  background: var(--ink);
+  border: 0;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.secondary { color: var(--ink-mid); text-decoration: none; font-size: 0.95rem; }
+.secondary:hover { color: var(--ink); }
+
+.colophon {
+  margin: 1.6rem 0 0;
+  padding-top: 1rem;
+  border-top: 1px solid var(--rule);
+  font-size: 0.8rem;
+  line-height: 1.5;
+  color: var(--ink-dim);
+}
+.colophon strong { color: var(--ink-mid); font-weight: 600; }
+
+.noscript { padding: 2rem; color: var(--ink); }
+
+/* Portrait, or any narrow window: stack the three groups instead of squeezing
+   them. The wall mount is landscape, but the page gets opened on a phone. */
+@media (max-aspect-ratio: 1/1) {
+  .strip { grid-template-columns: 1fr; }
+  .group { padding: 0.7rem 1.1rem; }
+  body { overflow: auto; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; animation: none !important; }
+}

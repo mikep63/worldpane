@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<title>Worldpane</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="An always-on amateur radio display: day/night terminator, sun times, and space weather.">
+<!-- Standalone so Add to Home Screen gives a chrome-less kiosk on the wall. -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Worldpane">
+<meta name="color-scheme" content="light dark">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<!-- Dashboard -->
+<main id="dashboard" hidden>
+  <div class="map-wrap">
+    <canvas id="map" aria-label="World map with the day and night terminator"></canvas>
+    <p id="map-caption" class="caption"></p>
+  </div>
+
+  <div class="strip">
+    <section class="group" aria-labelledby="lbl-time">
+      <h2 id="lbl-time" class="label">Time</h2>
+      <p class="big num" id="utc">--:--</p>
+      <p class="sub">UTC</p>
+      <p class="mid num" id="local">--:--</p>
+      <p class="sub" id="local-label">Local</p>
+    </section>
+
+    <section class="group" aria-labelledby="lbl-sun">
+      <h2 id="lbl-sun" class="label">Sun at <span id="grid-label">--</span></h2>
+      <dl class="rows">
+        <div><dt>Sunrise</dt><dd class="num" id="sunrise">--:--</dd></div>
+        <div><dt>Sunset</dt><dd class="num" id="sunset">--:--</dd></div>
+      </dl>
+      <p class="grey" id="greyline">&nbsp;</p>
+    </section>
+
+    <section class="group" aria-labelledby="lbl-swx">
+      <h2 id="lbl-swx" class="label">Space weather</h2>
+      <div class="tiles">
+        <div class="tile" id="tile-flux">
+          <p class="big num" id="flux">--</p>
+          <p class="sub">Solar flux</p>
+        </div>
+        <div class="tile" id="tile-kp">
+          <p class="big num" id="kp">--</p>
+          <p class="sub" id="kp-trend">Kp</p>
+        </div>
+        <div class="tile" id="tile-xray">
+          <p class="big num" id="xray">--</p>
+          <p class="sub">X-ray</p>
+        </div>
+      </div>
+      <p class="caption" id="swx-age"></p>
+    </section>
+  </div>
+
+  <p class="callsign" id="callsign"></p>
+  <a class="gear" href="#/settings" aria-label="Settings">
+    <svg viewBox="0 0 24 24" width="26" height="26" aria-hidden="true" focusable="false">
+      <path fill="currentColor" d="M12 15.5A3.5 3.5 0 1 1 15.5 12 3.5 3.5 0 0 1 12 15.5zm7.4-2.6.02-.9-.02-.9 1.9-1.5a.5.5 0 0 0 .12-.62l-1.8-3.1a.5.5 0 0 0-.6-.22l-2.24.9a7 7 0 0 0-1.55-.9l-.34-2.38a.5.5 0 0 0-.5-.42h-3.6a.5.5 0 0 0-.5.42l-.34 2.38a7 7 0 0 0-1.55.9l-2.24-.9a.5.5 0 0 0-.6.22l-1.8 3.1a.5.5 0 0 0 .12.62l1.9 1.5-.02.9.02.9-1.9 1.5a.5.5 0 0 0-.12.62l1.8 3.1a.5.5 0 0 0 .6.22l2.24-.9a7 7 0 0 0 1.55.9l.34 2.38a.5.5 0 0 0 .5.42h3.6a.5.5 0 0 0 .5-.42l.34-2.38a7 7 0 0 0 1.55-.9l2.24.9a.5.5 0 0 0 .6-.22l1.8-3.1a.5.5 0 0 0-.12-.62z"/>
+    </svg>
+  </a>
+</main>
+
+<!-- Settings -->
+<main id="settings" hidden>
+  <div class="sheet">
+    <h1>Worldpane</h1>
+    <p class="intro" id="settings-intro">
+      Your grid square is the only location this needs. It stays on this device.
+    </p>
+
+    <form id="settings-form" novalidate>
+      <label for="f-grid">Grid square</label>
+      <input id="f-grid" name="grid" inputmode="latin" autocapitalize="characters"
+             autocomplete="off" spellcheck="false" placeholder="FM17ax" maxlength="8" required>
+      <p class="hint" id="grid-hint">
+        Four characters work. Six is better &mdash; a four-character square is
+        about 176&nbsp;km across, which spreads sunrise over some eleven minutes.
+      </p>
+
+      <label for="f-callsign">Callsign <span class="optional">optional</span></label>
+      <input id="f-callsign" name="callsign" autocapitalize="characters"
+             autocomplete="off" spellcheck="false" placeholder="KB4S" maxlength="12">
+
+      <fieldset>
+        <legend>Theme</legend>
+        <div class="choices">
+          <label><input type="radio" name="theme" value="auto"> Auto</label>
+          <label><input type="radio" name="theme" value="light"> Light</label>
+          <label><input type="radio" name="theme" value="dark"> Dark</label>
+        </div>
+        <p class="hint">Auto follows sunrise and sunset at your grid.</p>
+      </fieldset>
+
+      <div class="actions">
+        <button type="submit" class="primary">Save</button>
+        <a class="secondary" id="cancel" href="#/">Cancel</a>
+      </div>
+    </form>
+
+    <p class="colophon">
+      Coastline from <strong>Natural Earth</strong> (public domain).
+      Space weather from <strong>NOAA SWPC</strong>.
+      Sun positions from <strong>astronomy-engine</strong> by Don Cross (MIT).
+      Nothing you enter leaves this device.
+    </p>
+  </div>
+</main>
+
+<noscript>
+  <p class="noscript">Worldpane computes sun positions in the browser, so it needs JavaScript.</p>
+</noscript>
+
+<script type="module" src="js/main.js"></script>
+</body>
+</html>
