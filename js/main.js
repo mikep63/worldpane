@@ -190,7 +190,13 @@ function bearings(view) {
 
 function drawGlobe(now) {
   const g = state.globe;
-  if (!g.prepared) return;
+  // Not silent. Returning with the canvas untouched leaves the previous view
+  // on screen and looks exactly like the globe setting having no effect, which
+  // is indistinguishable from a bug in the projection.
+  if (!g.prepared) {
+    render.renderMapCaption('Globe unavailable — coastline not loaded');
+    return;
+  }
   const { w, h } = state.size;
   const ctx = canvas.getContext('2d');
   const c = mapColours();
