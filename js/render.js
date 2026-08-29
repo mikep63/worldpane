@@ -171,6 +171,9 @@ export function fillSettings(s) {
   for (const el of document.querySelectorAll('input[name="theme"]')) {
     el.checked = el.value === s.theme;
   }
+  for (const el of document.querySelectorAll('input[name="view"]')) {
+    el.checked = el.value === s.view;
+  }
 }
 
 export function showGridError(message) {

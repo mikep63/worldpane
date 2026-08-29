@@ -91,6 +91,16 @@ body {
   height: auto;
 }
 
+/* The globe is dragged, so the browser must not claim the gesture for panning
+   or the double-tap zoom -- on iPadOS the page would otherwise swallow half of
+   every drag. Only in globe view: the flat map has no gesture to protect. */
+#map.globe {
+  touch-action: none;
+  cursor: grab;
+}
+
+#map.globe.dragging { cursor: grabbing; }
+
 .caption {
   margin: 0;
   font-size: 0.75rem;

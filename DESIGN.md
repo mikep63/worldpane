@@ -335,6 +335,50 @@ display that cannot show the opening you are waiting for fails at its main job.
 Rejected: **both, switchable.** Two projection functions and a second code path
 to keep working, against the standing test of what survives a year of neglect.
 
+## The globe is back as a spike, undecided · 2026-08-29
+
+`js/globe.js` and `spec/check_globe.mjs` exist and the setting is live, default
+flat. **This is not a decision** -- it is on disk to be looked at on the iPad
+before the paragraphs above are either amended or left standing.
+
+What changed: the globe turns. Drag it and the far side comes round, which
+answers the hemisphere objection on its own terms. What did not change: turning
+it is an interaction, and this display is read from three metres by someone who
+is not touching it. A rotatable globe answers "show me the terminator at my
+target" with "come here and drag", where the flat map answers it with a glance.
+That is why flat is still the default and why the rejection above has not been
+struck out.
+
+Three things the spike settled, whichever way the decision goes:
+
+- **The night side needs its own geometry.** `terminator.nightPolygon` closes
+  along the dark pole, which is meaningless on a hemisphere -- the far side
+  projects onto the same disc and the polygon folds over itself. The globe
+  builds its region from the visible half of the terminator great circle
+  stitched to an arc of the limb. The visible half is exactly a half-turn,
+  because depth along the view axis is one sinusoid in the parameter, so there
+  is nothing to scan for. Taking the *wrong* limb arc gives a plausible-looking
+  globe with the lit and dark halves swapped, and no amount of looking at one
+  orientation catches it -- hence the 39,200-point fill classification check in
+  `spec/check_globe.mjs`.
+- **Vertices are cached as unit 3-vectors, not pixels.** The flat map's
+  load-time projection cache and pre-painted basemap cannot survive rotation.
+  Caching the trigonometry instead makes a frame a 3x3 multiply per vertex, and
+  it is resolution-independent -- the globe is the one thing here that does not
+  need rebuilding on resize. The coastline is thinned to every sixth vertex
+  while a finger is down and restored the moment it lifts.
+- **A turned globe must come home.** Ninety seconds after the last touch it
+  animates back to the operator's grid. Without it, one brush against the glass
+  -- and Guided Access means the whole screen is the map -- leaves the display
+  showing the wrong hemisphere until somebody notices.
+
+The open question is not correctness, it is **the layout**. The globe is drawn
+inside the flat map's 2:1 box so that switching views does not move the numbers,
+which leaves it half the width of the flat map with empty flanks either side.
+Either the globe gets a squarer box and the strip is redesigned around it, or
+the flanks earn something, or the globe is not worth it. Decide that on the
+device.
+
 ## The map data is 50m coastline at 2dp · 2026-08-28
 
 `ne_50m_coastline` from Natural Earth, coordinates rounded to two decimal places

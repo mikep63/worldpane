@@ -11,9 +11,15 @@ export const DEFAULTS = Object.freeze({
   callsign: '',
   grid: '',
   theme: 'auto', // 'auto' | 'light' | 'dark'
+  view: 'flat',  // 'flat' | 'globe'
 });
 
 export const THEMES = ['auto', 'light', 'dark'];
+
+// The globe is a setting rather than a control on the dashboard: "Gear in a
+// corner. Nothing else." It also has to be remembered, because a wall display
+// is not re-chosen every morning.
+export const VIEWS = ['flat', 'globe'];
 
 /**
  * Read settings, merged over the defaults.
@@ -52,6 +58,7 @@ function sanitise(s) {
     callsign: typeof s.callsign === 'string' ? s.callsign.trim().toUpperCase().slice(0, 12) : '',
     grid: typeof s.grid === 'string' && isValid(s.grid) ? normaliseGrid(s.grid) : '',
     theme: THEMES.includes(s.theme) ? s.theme : DEFAULTS.theme,
+    view: VIEWS.includes(s.view) ? s.view : DEFAULTS.view,
   };
 }
 
