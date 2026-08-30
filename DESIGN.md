@@ -21,7 +21,8 @@ shack.
 
 **Status: first slice running as of 2026-08-28.** Settings, clocks, sun times
 with the grey-line countdown, the terminator map, and the three NOAA numbers.
-Satellites and the scheduled Action are still deferred.
+Satellites and the scheduled Action are still deferred. The About page shipped
+2026-08-29.
 
 `PLAN.md` is the historical record from when this was `bandwatch` — its research
 is reusable and most of its decisions survive intact, but its name and platform
@@ -411,6 +412,32 @@ alone.
 The `coastline` file, not `land` — lines rather than filled polygons. `land`
 would have been the right choice for a globe.
 
+## The About page credits by choice, not obligation · 2026-08-29
+
+Worldpane contains no HamClock code, data or assets, so nothing is owed to it.
+The obligations that do exist are met: astronomy-engine's MIT notice ships
+embedded in `vendor/astronomy.js`, and Natural Earth and NOAA SWPC are both
+public domain.
+
+The page credits Elwood Downey anyway, in one sentence of lineage rather than a
+homage. It is true -- the project exists because HamClock defined what a shack
+display is -- and after his death in January 2026, with a scramble of successors
+following, silence would read as quietly reimplementing a dead man's project.
+The credit costs one sentence and forecloses that reading entirely.
+
+Rejected: **"based on HamClock"**. False. There is no shared code.
+
+Rejected: **dropping the credit because the build is unique**. It is unique, and
+the sentence is about where the *idea* came from, not the code.
+
+The links to the successors are the half that earns its place, and they are not
+attribution at all -- they exist so someone who lands here wanting a DX cluster
+and satellites reaches a project that has them instead of a dead end. Five are
+listed and each was checked live on 2026-08-29: openhamclock.com, hampulse.ca,
+HAMSignal on the App Store, hamradio.shaneburrell.com and hamclock.me. HamClock
+Pro is named in the survey above but is not linked, because no URL for it could
+be confirmed and a broken link serves nobody.
+
 ## Theme is a setting, defaulting to auto · 2026-08-28
 
 Auto means light in daylight and dark after sunset **at the operator's grid**,
@@ -515,17 +542,10 @@ expect it but leave the grey-line window starting at a stated 2° that is really
 
 # Deferred, not decided
 
-Roughly in the order they should be taken. The first two are gaps in what has
-already shipped rather than new features, which is why they come before
+Roughly in the order they should be taken. The first is a gap in what has
+already shipped rather than a new feature, which is why it comes before
 satellites.
 
-- **The About page does not exist, and this document promises one.** *"Do not
-  let the About page claim otherwise. Link all of them, prominently"* — nothing
-  in the app credits Elwood Downey (WB0OEW, SK January 2026) or links
-  OpenHamClock, HamPulse, HAMSignal and the rest. The settings colophon covers
-  data attribution only. This is a stated intention currently being quietly
-  broken, it is small, and it should be first. Whoever finds this should reach
-  the real HamClock's continuations in one tap.
 - **No offline caching, which a wall display eventually needs.** A page already
   loaded survives a network drop: sun times and the terminator are pure local
   maths, and space weather degrades to stale by design. But a **reload** without

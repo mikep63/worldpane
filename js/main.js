@@ -358,11 +358,20 @@ async function tickSpaceWeather() {
 // ---------- routing ---------------------------------------------------------
 
 function route() {
+  const hash = location.hash;
+  // About wins over the first-run redirect to settings: someone who lands here
+  // unconfigured should still be able to read what this is and find the
+  // projects that do more, without being made to enter a grid square first.
+  const wantAbout = hash.startsWith('#/about');
   const wantSettings =
-    location.hash.startsWith('#/settings') || !settings.isConfigured(state.settings);
+    !wantAbout && (hash.startsWith('#/settings') || !settings.isConfigured(state.settings));
 
-  document.getElementById('dashboard').hidden = wantSettings;
+  document.getElementById('about').hidden = !wantAbout;
   document.getElementById('settings').hidden = !wantSettings;
+  document.getElementById('dashboard').hidden = wantAbout || wantSettings;
+
+  // Nothing on the About page is live, so there is nothing to render or tick.
+  if (wantAbout) return;
 
   if (wantSettings) {
     render.fillSettings(state.settings);

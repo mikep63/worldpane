@@ -211,9 +211,10 @@ body {
 }
 .gear:hover, .gear:focus-visible { color: var(--ink); }
 
-/* ---------- settings ----------------------------------------------------- */
+/* ---------- settings and about ------------------------------------------- */
 
-#settings {
+#settings,
+#about {
   height: 100%;
   overflow-y: auto;
   display: grid;
@@ -310,6 +311,30 @@ button.primary {
   color: var(--ink-dim);
 }
 .colophon strong { color: var(--ink-mid); font-weight: 600; }
+.colophon a { color: var(--ink-mid); }
+
+/* ---------- about --------------------------------------------------------- */
+
+#about h2 {
+  margin: 1.5rem 0 0.4rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+}
+
+#about p { margin: 0 0 0.8rem; color: var(--ink-mid); }
+#about a { color: var(--ink); }
+#about a:hover { color: var(--station); }
+
+.links {
+  margin: 0 0 0.8rem;
+  padding-left: 1.1rem;
+  color: var(--ink-mid);
+}
+.links li { margin: 0 0 0.4rem; }
+.links strong { color: var(--ink); font-weight: 600; }
 
 .noscript { padding: 2rem; color: var(--ink); }
 

@@ -118,11 +118,83 @@
     </form>
 
     <p class="colophon">
-      Coastline from <strong>Natural Earth</strong> (public domain).
-      Space weather from <strong>NOAA SWPC</strong>.
-      Sun positions from <strong>astronomy-engine</strong> by Don Cross (MIT).
       Nothing you enter leaves this device.
+      <a href="#/about">About Worldpane</a> &mdash; where it came from, what it
+      is built from, and what it does with your data.
     </p>
+  </div>
+</main>
+
+<!-- About -->
+<main id="about" hidden>
+  <div class="sheet">
+    <h1>About Worldpane</h1>
+    <p class="intro">
+      An always-on display for a radio shack: the day and night terminator, sun
+      times with the grey-line countdown, and space weather. No installation, no
+      account, no server.
+    </p>
+
+    <h2>Where it came from</h2>
+    <p>
+      Worldpane shares no code with HamClock. It exists because HamClock, by
+      Elwood Downey (WB0OEW, SK January 2026), showed what a shack display could
+      be. The original stops functioning in June&nbsp;2026.
+    </p>
+    <p>
+      Worldpane deliberately does less than any of the projects below &mdash; it
+      is one operator&rsquo;s instrument rather than a dashboard for everyone. If
+      you want the full article, with DX cluster, satellites and dozens of
+      panels, these carry it on:
+    </p>
+    <ul class="links">
+      <li>
+        <a href="https://openhamclock.com" rel="noreferrer">OpenHamClock</a>
+        &mdash; hosted and open source, the heavyweight
+      </li>
+      <li>
+        <a href="https://hampulse.ca" rel="noreferrer">HamPulse</a>
+        &mdash; Apple&nbsp;TV and iPad
+      </li>
+      <li>
+        <a href="https://apps.apple.com/us/app/hamsignal/id6760658659" rel="noreferrer">HAMSignal</a>
+        &mdash; native iOS and iPadOS
+      </li>
+      <li>
+        <a href="https://hamradio.shaneburrell.com" rel="noreferrer">Shane Burrell&rsquo;s dashboard</a>
+        &mdash; browser-based, DX cluster and APRS
+      </li>
+      <li>
+        <a href="https://hamclock.me" rel="noreferrer">hamclock.me</a>
+      </li>
+    </ul>
+
+    <h2>What it is built from</h2>
+    <ul class="links">
+      <li><strong>Natural Earth</strong> coastline &mdash; public domain</li>
+      <li><strong>NOAA SWPC</strong> &mdash; solar flux, planetary K index, GOES X-ray</li>
+      <li>
+        <strong>astronomy-engine</strong> by Don Cross &mdash; MIT, its licence
+        text ships inside the vendored file
+      </li>
+    </ul>
+
+    <h2>Your data</h2>
+    <p>
+      Your grid square and callsign are kept on this device and never sent
+      anywhere. There is no account, no server and no analytics. The only
+      network requests Worldpane makes are for space weather from NOAA.
+    </p>
+
+    <h2>Licence</h2>
+    <p>
+      MIT. Source at
+      <a href="https://github.com/mikep63/worldpane" rel="noreferrer">github.com/mikep63/worldpane</a>.
+    </p>
+
+    <div class="actions">
+      <a class="secondary" href="#/">Back</a>
+    </div>
   </div>
 </main>
 
