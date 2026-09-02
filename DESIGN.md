@@ -482,11 +482,26 @@ are what carry the field structure across the room.
 Rejected: **labels on the globe.** They would have to track the rotation, and
 the two edges they hang off do not exist on a hemisphere.
 
-**The hierarchy is carried by colour, not weight.** At one device pixel there
-is nothing left to thin. Each step down the stack — coast, lake, border, grid —
-steps toward the day colour, so the coastline stays the line the eye finds
-first and the wireframe reads as one drawing rather than four competing ones.
-Draw order is bottom-up in the same sequence.
+**The hierarchy is carried by contrast, not weight.** At one device pixel there
+is nothing left to thin, so each step down the stack steps toward the day
+colour. Draw order is bottom-up in the same sequence, so the coastline stays the
+line the eye finds first.
+
+| | coast | lake | border | disputed | grid | labels |
+|---|---|---|---|---|---|---|
+| Contrast vs `--map-day` | 3.9:1 | 3.3:1 | 2.8:1 | 2.2:1 | 2.0:1 | 3.0:1 |
+
+**The bottom rung is the constraint, not the top** — learned by getting it
+wrong on the first pass. Stepping a fixed amount toward the background each time
+runs out of visible range before it runs out of layers: the grid landed at
+**1.24:1** and the disputed borders at 1.6:1, which is not subtle, it is absent.
+The switches worked perfectly and looked broken, because ticking a box drew
+something nobody could see. Nothing goes below 1.9:1, and any future layer has
+to fit inside the ladder rather than extend it downward.
+
+Labels carry their own value at 3.0:1 rather than the grid's 2.0:1. Small text
+needs more contrast than a long line to read as equally present, and the letters
+are already the one part meant to be read close up.
 
 **Two switches, not one and not four.** Borders and inland water are a single
 decision about how much cartography the map carries; the grid is an operating

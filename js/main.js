@@ -90,6 +90,7 @@ function mapColours() {
     disputed: s.getPropertyValue('--map-border-disputed').trim(),
     lake: s.getPropertyValue('--map-lake').trim(),
     grid: s.getPropertyValue('--map-grid').trim(),
+    gridLabel: s.getPropertyValue('--map-grid-label').trim(),
     station: s.getPropertyValue('--station').trim(),
   };
 }
@@ -204,7 +205,7 @@ function rebuildBasemap() {
   // exist there.
   if (state.settings.fields) {
     drawFieldLabels(state.basemap.getContext('2d'), fieldLabels(), w, h, {
-      fill: c.grid,
+      fill: c.gridLabel,
       fontPx: Math.max(11, Math.round(w / 90)),
       pad: Math.max(3, Math.round(w / 340)),
     });

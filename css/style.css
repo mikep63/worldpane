@@ -25,16 +25,25 @@
    *
    * The overlay layers are one wireframe with a hierarchy, not four competing
    * ones. At a single device pixel there is no weight left to separate them
-   * with, so each step down the stack is a step toward the day colour: coast,
-   * then lake, then border, then the field grid, which should be findable
-   * rather than legible from across the room. */
+   * with, so the hierarchy is carried entirely by contrast against --map-day:
+   *
+   *   coast 3.9:1   lake 3.3:1   border 2.8:1   disputed 2.2:1   grid 2.0:1
+   *
+   * The bottom rung is the constraint, not the top. A ladder that keeps
+   * stepping toward the day colour runs out of visible range before it runs
+   * out of layers -- at 1.2:1 the grid is not subtle, it is absent, and the
+   * switch that draws it looks broken. Nothing here goes below 1.9:1.
+   *
+   * Labels get their own value because small text needs more contrast than a
+   * long line to read as equally present. */
   --map-day:   #16202b;
   --map-night: #070a0e;
   --map-coast: #4f7fa6;
-  --map-lake:  #416b8d;
-  --map-border: #35566f;
-  --map-border-disputed: #2c4457;
-  --map-grid:  #24313d;
+  --map-lake:  #487497;
+  --map-border: #416888;
+  --map-border-disputed: #385975;
+  --map-grid:  #335069;
+  --map-grid-label: #45708f;
 }
 
 :root[data-theme="light"] {
@@ -52,10 +61,11 @@
   --map-day:   #dce8f2;
   --map-night: #8fa3b6;
   --map-coast: #3c5f7d;
-  --map-lake:  #5b81a0;
-  --map-border: #8ba5bb;
-  --map-border-disputed: #a3b8c9;
-  --map-grid:  #bccddb;
+  --map-lake:  #63819a;
+  --map-border: #718da4;
+  --map-border-disputed: #859db2;
+  --map-grid:  #93a9bc;
+  --map-grid-label: #6c88a0;
 }
 
 * { box-sizing: border-box; }
