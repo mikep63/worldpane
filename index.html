@@ -32,10 +32,15 @@
 
     <section class="group" aria-labelledby="lbl-sun">
       <h2 id="lbl-sun" class="label">Sun at <span id="grid-label">--</span></h2>
-      <dl class="rows">
-        <div><dt>Sunrise</dt><dd class="num" id="sunrise">--:--</dd></div>
-        <div><dt>Sunset</dt><dd class="num" id="sunset">--:--</dd></div>
-      </dl>
+      <!--
+      Value above caption, the same shape as the Time pane rather than a
+      label-and-value table. Four times in one family, with UTC the only one
+      set large. See DESIGN.md, "One idiom for every number in the strip".
+      -->
+      <p class="mid num" id="sunrise">--:--</p>
+      <p class="sub">Sunrise</p>
+      <p class="mid num" id="sunset">--:--</p>
+      <p class="sub">Sunset</p>
       <p class="grey" id="greyline">&nbsp;</p>
     </section>
 

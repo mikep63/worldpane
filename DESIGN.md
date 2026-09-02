@@ -635,6 +635,33 @@ a desktop browser while being worked on.
 Rejected: **a side rail of numbers.** It shrinks the map to make room for text,
 and the map is the reason the thing exists.
 
+## One idiom for every number in the strip · 2026-09-02
+
+Every value in the strip is a number with a small uppercase caption under it.
+The Sun pane used to be a `<dl>` of label-left, value-right rows, so four times
+were shown at four sizes in two different shapes — the Time pane read as big
+numbers with captions and the Sun pane read as a table. Both now stack, which is
+what the space weather tiles were already doing.
+
+Hierarchy is what the strip is doing with size, and it survives intact: **UTC is
+the only `.big` number on the display.** Local, sunrise and sunset share `.mid`.
+One large number, and it is the operating clock — logs, nets and spots are all
+UTC, so it is the number looked at most and the one that should be findable
+without reading.
+
+Rejected: **folding the Time and Sun panes into a single times pane.** The pull
+is obvious, since all four values are HH:MM, and a 2×2 grid of monospace times
+is a good shape at distance. But it makes all four peers, which promotes sunset
+to the rank of UTC. It also has nowhere to put "Sun at FM17" — that heading is
+carrying the fact that two of the four times are grid-derived where UTC is
+universal and local is whatever zone the iPad believes it is in, and replacing
+it with per-row qualifiers is more ink than it saves. The grey-line countdown,
+the most useful line in the strip, would be orphaned under the grid. And two
+panes at `1fr 1fr` hands half the strip to three small tiles.
+
+The cost is about 50 points of extra height in the Sun pane, which the 270-point
+strip absorbs.
+
 ## First run shows the settings page · 2026-08-28
 
 With no stored grid there is nothing truthful to draw, so the first load opens

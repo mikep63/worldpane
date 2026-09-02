@@ -181,16 +181,9 @@ body {
 .mid  { margin: 0.45rem 0 0; font-size: clamp(1.3rem, 4vh, 2rem); font-weight: 500; line-height: 1; color: var(--ink-mid); }
 .sub  { margin: 0.15rem 0 0; font-size: 0.74rem; letter-spacing: 0.07em; text-transform: uppercase; color: var(--ink-dim); }
 
-.rows { margin: 0; }
-.rows > div {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  gap: 1rem;
-  padding: 0.18rem 0;
-}
-.rows dt { color: var(--ink-mid); font-size: 0.95rem; }
-.rows dd { margin: 0; font-size: clamp(1.1rem, 3vh, 1.6rem); font-weight: 500; }
+/* A pane's first value sits tight under its heading; .mid only carries a top
+   margin to separate it from the value above it. */
+.label + .mid { margin-top: 0; }
 
 .grey {
   margin: 0.6rem 0 0;
