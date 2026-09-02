@@ -21,10 +21,20 @@
   --unsettled: #e0a33a;
   --storm:     #e4635e;
   --station:   #ff6b4a;
-  /* Read by main.js and handed to the canvas, so map and page never drift. */
+  /* Read by main.js and handed to the canvas, so map and page never drift.
+   *
+   * The overlay layers are one wireframe with a hierarchy, not four competing
+   * ones. At a single device pixel there is no weight left to separate them
+   * with, so each step down the stack is a step toward the day colour: coast,
+   * then lake, then border, then the field grid, which should be findable
+   * rather than legible from across the room. */
   --map-day:   #16202b;
   --map-night: #070a0e;
   --map-coast: #4f7fa6;
+  --map-lake:  #416b8d;
+  --map-border: #35566f;
+  --map-border-disputed: #2c4457;
+  --map-grid:  #24313d;
 }
 
 :root[data-theme="light"] {
@@ -42,6 +52,10 @@
   --map-day:   #dce8f2;
   --map-night: #8fa3b6;
   --map-coast: #3c5f7d;
+  --map-lake:  #5b81a0;
+  --map-border: #8ba5bb;
+  --map-border-disputed: #a3b8c9;
+  --map-grid:  #bccddb;
 }
 
 * { box-sizing: border-box; }

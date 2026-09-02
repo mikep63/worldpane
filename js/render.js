@@ -174,6 +174,8 @@ export function fillSettings(s) {
   for (const el of document.querySelectorAll('input[name="view"]')) {
     el.checked = el.value === s.view;
   }
+  $('f-overlays').checked = s.overlays;
+  $('f-fields').checked = s.fields;
 }
 
 export function showGridError(message) {

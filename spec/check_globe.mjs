@@ -14,7 +14,7 @@
 import {
   toVec, toLonLat, dot, basis, project, isVisible,
   wrapLon, shortestLon, rotateBy, ease, interpolate,
-  nightRegion, prepareCoastline, decimate, vertexCount,
+  nightRegion, prepareLayer, decimate, vertexCount,
 } from '../js/globe.js';
 import { toLatLon } from '../js/grid.js';
 
@@ -224,7 +224,7 @@ for (const [lon0, lat0, sunLon, sunLat] of [
 // --- coastline preparation --------------------------------------------------
 {
   const fake = { scale: 100, lines: [[0, 0, 9000, 0, 0, 9000], [1000, 1000, 1100, 1100]] };
-  const prep = prepareCoastline(fake);
+  const prep = prepareLayer(fake);
   check('one buffer per line', prep.length, 2);
   check('three vertices in the first', prep[0].length, 9);
   check('null island decodes to +x', [prep[0][0], prep[0][1], prep[0][2]].map(Math.round), [1, 0, 0]);

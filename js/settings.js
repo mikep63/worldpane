@@ -12,6 +12,8 @@ export const DEFAULTS = Object.freeze({
   grid: '',
   theme: 'auto', // 'auto' | 'light' | 'dark'
   view: 'flat',  // 'flat' | 'globe'
+  overlays: true, // country borders and major lakes
+  fields: true,   // the Maidenhead field grid
 });
 
 export const THEMES = ['auto', 'light', 'dark'];
@@ -20,6 +22,11 @@ export const THEMES = ['auto', 'light', 'dark'];
 // corner. Nothing else." It also has to be remembered, because a wall display
 // is not re-chosen every morning.
 export const VIEWS = ['flat', 'globe'];
+
+// Two switches, not one and not four. Borders and inland water are a single
+// decision about how much cartography the map carries; the Maidenhead grid is
+// an operating aid and a different thing to want on screen. See DESIGN.md,
+// "Borders, lakes and a grid".
 
 /**
  * Read settings, merged over the defaults.
@@ -59,6 +66,8 @@ function sanitise(s) {
     grid: typeof s.grid === 'string' && isValid(s.grid) ? normaliseGrid(s.grid) : '',
     theme: THEMES.includes(s.theme) ? s.theme : DEFAULTS.theme,
     view: VIEWS.includes(s.view) ? s.view : DEFAULTS.view,
+    overlays: typeof s.overlays === 'boolean' ? s.overlays : DEFAULTS.overlays,
+    fields: typeof s.fields === 'boolean' ? s.fields : DEFAULTS.fields,
   };
 }
 

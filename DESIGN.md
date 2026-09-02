@@ -28,12 +28,14 @@ Satellites and the scheduled Action are still deferred. The About page shipped
 is reusable and most of its decisions survive intact, but its name and platform
 choice do not. Where the two disagree, this file wins.
 
-**Checks.** Five spec files run under the JavaScriptCore shell that ships with
+**Checks.** Seven spec files run under the JavaScriptCore shell that ships with
 macOS, since there is no `node` here:
 
 ```sh
 JSC=/System/Library/Frameworks/JavaScriptCore.framework/Versions/A/Helpers/jsc
-for s in grid sun terminator map render; do $JSC -m spec/check_$s.mjs || break; done
+for s in grid sun terminator map render globe graticule; do
+  $JSC -m spec/check_$s.mjs || break
+done
 python3 -m http.server 8080     # then open http://127.0.0.1:8080
 ```
 
@@ -412,6 +414,93 @@ alone.
 The `coastline` file, not `land` — lines rather than filled polygons. `land`
 would have been the right choice for a globe.
 
+## Borders, lakes and a grid · 2026-09-02
+
+Three layers over the coastline: country boundaries, the 44 largest lakes, and
+the Maidenhead field grid. Each is a `{ scale, lines }` payload of the same
+shape as `coastline.json`, so both projections decode all four layers with the
+decoders they already had. The flat map projects them into the same pre-painted
+basemap; the globe caches them as unit vectors alongside the coastline.
+
+| Layer | Source | Vertices | Gzipped |
+|---|---|---|---|
+| Coastline | `ne_50m_coastline` @ 2dp | 60,392 | 250 KB |
+| **Borders** | `ne_50m_admin_0_boundary_lines_land` @ 1dp | 15,594 | **39 KB** |
+| **Lakes** | `ne_50m_lakes`, `min_zoom <= 2` @ 2dp | 6,604 | **25 KB** |
+| **Field grid** | generated | 3,155 | **0** |
+
+**Borders quantise to 1dp, not the coastline's 2dp.** 0.1° is 11 km against a
+26 km pixel — still finer than the display can resolve, and a border is mostly
+geodesic straight lines that lose nothing to it. A coastline is fractal all the
+way down and does not survive the same treatment. This is "quantisation is the
+lever, not the scale" taken one notch further, and it halves the file.
+
+**The `boundary_lines_land` layer, not `admin_0_countries`.** It carries land
+boundaries only — coastal borders are excluded by construction — so it is
+exactly complementary to the coastline with no duplicated ink. The polygon
+layer would have redrawn every coast a second time.
+
+**Disputed boundaries are dashed, not filtered.** Natural Earth flags 35 of its
+390 segments `Disputed`, `Line of control`, `Indefinite` or `Indeterminant
+frontier`. Drawing them identically to settled borders states a position the
+source itself declines to take.
+
+Rejected: **shipping only the 355 settled boundaries.** It sounds neutral and
+is not. The flagged segments cluster — 13 across Kashmir and northern India,
+6 around Israel and Palestine, 4 in the Horn of Africa — so filtering leaves a
+conspicuous 40–60 px hole along the top of India and gives Israel no eastern
+border at all. That invites the question rather than avoiding it, and costs
+904 vertices to avoid.
+
+Rejected: **choosing a point of view.** The file carries per-country fields
+(`FCLASS_US`, `FCLASS_CN`, `FCLASS_IN`, and thirty more) that would let the map
+take one government's line. A shack display has no business doing that, and the
+feature has no end to it.
+
+**Lakes are filtered by Natural Earth's own `min_zoom`, at 2.0.** That keeps 44
+of 412 — all five Great Lakes, Baikal, Victoria, Tanganyika, Malawi, Chad,
+Titicaca, Balkhash, the Aral remnants — and drops 368 reservoirs and ponds that
+would be sub-pixel smears. This is the layer that fixes something *wrong* rather
+than adding detail: without it North America has a blank middle. The Caspian is
+absent from this layer because Natural Earth classes it as a sea; it is already
+in the coastline, and was checked rather than assumed.
+
+**The field grid is generated, and it is the only ham-specific overlay here.**
+Eighteen fields of 20° by 10°, lettered A to R — the first pair of any locator.
+It ships as zero bytes because it is arithmetic. It samples at 3° because the
+globe has to walk a meridian as a curve; the flat map pays for the samples once
+into the basemap and does not care. Eighteen meridians rather than nineteen:
+180E and 180W are the same line. Seventeen parallels rather than nineteen: the
+two at the poles are points.
+
+Rejected: **a label in every cell.** 324 two-letter labels are illegible at the
+three metres this display is designed for and noise at any distance. The
+letters run along the top and left edges instead, which still names any cell by
+reading across and down, and they are a walk-up detail by design — the *lines*
+are what carry the field structure across the room.
+
+Rejected: **labels on the globe.** They would have to track the rotation, and
+the two edges they hang off do not exist on a hemisphere.
+
+**The hierarchy is carried by colour, not weight.** At one device pixel there
+is nothing left to thin. Each step down the stack — coast, lake, border, grid —
+steps toward the day colour, so the coastline stays the line the eye finds
+first and the wireframe reads as one drawing rather than four competing ones.
+Draw order is bottom-up in the same sequence.
+
+**Two switches, not one and not four.** Borders and inland water are a single
+decision about how much cartography the map carries; the grid is an operating
+aid and a different thing to want on screen. Both default on.
+
+Rejected: **state and province lines** (`ne_50m_admin_1`, 581 features, 68 KB).
+Readable at 4.2 px/degree and still wrong: it is ink that competes with the
+coastline at the distance this display is actually read from.
+
+Deferred: **the overlays make the missing service worker worse.** Each layer is
+another fetch that fails on a reload with no network. They fail softly — a
+missing overlay costs its own layer and nothing else, unlike the coastline —
+but there are now three files to cache instead of one.
+
 ## The About page credits by choice, not obligation · 2026-08-29
 
 Worldpane contains no HamClock code, data or assets, so nothing is owed to it.
@@ -550,7 +639,9 @@ satellites.
   loaded survives a network drop: sun times and the terminator are pure local
   maths, and space weather degrades to stale by design. But a **reload** without
   network fails — `map.js` fetches `data/coastline.json`, and without it the map
-  is replaced by "Coastline unavailable". For something meant to run unattended
+  is replaced by "Coastline unavailable". Since 2026-09-02 there are three files
+  to cache, not one, though only the coastline is fatal. For something meant to
+  run unattended
   for months on shack wifi, a service worker caching the shell and the coastline
   closes the last real fragility. `baseball-records` already does this; copy its
   shape rather than inventing one.

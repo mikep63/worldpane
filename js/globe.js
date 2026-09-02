@@ -245,14 +245,14 @@ function circle(steps) {
 // ---------- coastline -------------------------------------------------------
 
 /**
- * Decode data/coastline.json into unit vectors, one Float32Array per line.
+ * Decode a `{ scale, lines }` payload into unit vectors, one array per line.
  *
  * The flat map bakes pixels in at this point and re-does it on every resize.
  * Here the trigonometry is what gets cached and the pixels are computed per
  * frame, because the pixels change whenever the globe turns. Float32 costs
  * about 0.6 m of precision on a map where a pixel is 26 km.
  */
-export function prepareCoastline(data) {
+export function prepareLayer(data) {
   const s = data.scale;
   const out = [];
   for (const line of data.lines) {
@@ -334,18 +334,19 @@ export function strokeLimb(ctx, cx, cy, r, stroke, lineWidth = 1.5) {
 }
 
 /**
- * Stroke the visible coastline.
+ * Stroke the visible part of one prepared layer.
  *
  * A line that runs off the edge of the world is cut at the limb rather than
  * simply stopped at its last visible vertex: without it, coastlines end up to
  * half a degree short of the edge and the globe grows a ragged rim.
  */
-export function strokeCoastline(ctx, prepared, b, cx, cy, r, { stroke, lineWidth = 1 }) {
+export function strokeLayer(ctx, prepared, b, cx, cy, r, { stroke, lineWidth = 1, dash = null }) {
   const { e, n, v } = b;
   ctx.save();
   ctx.strokeStyle = stroke;
   ctx.lineWidth = lineWidth;
   ctx.lineJoin = 'round';
+  if (dash) ctx.setLineDash(dash);
   ctx.beginPath();
   for (const pts of prepared) {
     const count = pts.length / 3;

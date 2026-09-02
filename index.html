@@ -111,6 +111,19 @@
         </p>
       </fieldset>
 
+      <fieldset>
+        <legend>Detail</legend>
+        <div class="choices">
+          <label><input type="checkbox" id="f-overlays" name="overlays"> Borders and lakes</label>
+          <label><input type="checkbox" id="f-fields" name="fields"> Maidenhead fields</label>
+        </div>
+        <p class="hint">
+          Country borders are drawn dashed where the source marks them disputed.
+          The field grid is the first pair of a locator &mdash; 20&deg; of
+          longitude by 10&deg; of latitude, lettered along the top and left.
+        </p>
+      </fieldset>
+
       <div class="actions">
         <button type="submit" class="primary">Save</button>
         <a class="secondary" id="cancel" href="#/">Cancel</a>
@@ -171,7 +184,10 @@
 
     <h2>What it is built from</h2>
     <ul class="links">
-      <li><strong>Natural Earth</strong> coastline &mdash; public domain</li>
+      <li>
+        <strong>Natural Earth</strong> coastline, country boundaries and lakes
+        &mdash; public domain
+      </li>
       <li><strong>NOAA SWPC</strong> &mdash; solar flux, planetary K index, GOES X-ray</li>
       <li>
         <strong>astronomy-engine</strong> by Don Cross &mdash; MIT, its licence

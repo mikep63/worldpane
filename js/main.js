@@ -9,7 +9,10 @@
 import { toLatLon, isValid } from './grid.js';
 import { subsolarPoint, horizonEvents, greyLine, makeObserver } from './sun.js';
 import { nightPolygon } from './terminator.js';
-import { loadCoastline, projectCoastline, renderCoastline, drawNight, drawStation } from './map.js';
+import {
+  loadLayer, projectCoastline, renderBasemap, drawFieldLabels, drawNight, drawStation,
+} from './map.js';
+import { graticule, fieldLabels } from './graticule.js';
 import * as globe from './globe.js';
 import { readAll } from './spacewx.js';
 import * as settings from './settings.js';
@@ -31,17 +34,29 @@ const HOME_MS = 900;
 // Every sixth vertex while a finger is down. See globe.decimate.
 const DRAG_STRIDE = 6;
 
+// Disputed boundaries are dashed, in CSS pixels scaled to the device. See
+// DESIGN.md, "Borders, lakes and a grid": Natural Earth flags 35 of its 390
+// segments, and drawing them like settled borders would state a position the
+// source itself declines to take.
+const DISPUTED_DASH = [6, 4];
+
 const state = {
   settings: settings.load(),
   coastline: null,   // raw file
-  projected: null,   // projected to the current canvas size
-  basemap: null,     // pre-painted coastline canvas
+  // Overlay files, loaded independently of the coastline. A null one is simply
+  // not drawn: borders failing to arrive should cost the borders, not the map.
+  borders: null,
+  lakes: null,
+  // No file and so no failure mode -- it is arithmetic. See js/graticule.js.
+  fields: graticule(),
+  basemap: null,     // pre-painted static layers
   swx: {},
+  basemapKey: '',    // palette and switches the basemap was painted under
   size: { w: 0, h: 0 },
   dpr: 1,
   globe: {
-    prepared: null,  // unit vectors, resolution-independent
-    coarse: null,    // the same, thinned for dragging
+    prepared: null,  // { coastline, borders, disputed, lakes, fields } unit vectors
+    coarse: null,    // the same, thinned where thinning is safe
     view: { lon0: 0, lat0: 0 },
     dragging: false,
     pointerId: null,
@@ -71,6 +86,10 @@ function mapColours() {
     day: s.getPropertyValue('--map-day').trim(),
     night: s.getPropertyValue('--map-night').trim(),
     coast: s.getPropertyValue('--map-coast').trim(),
+    border: s.getPropertyValue('--map-border').trim(),
+    disputed: s.getPropertyValue('--map-border-disputed').trim(),
+    lake: s.getPropertyValue('--map-lake').trim(),
+    grid: s.getPropertyValue('--map-grid').trim(),
     station: s.getPropertyValue('--station').trim(),
   };
 }
@@ -101,14 +120,112 @@ function sizeCanvas() {
   return true;
 }
 
+/**
+ * The static layers, bottom to top, with the stroke each one wants.
+ *
+ * The order is the whole design. The field grid is faintest and sits under
+ * everything, then inland water, then borders, and the coastline last so it is
+ * the line the eye finds first -- see DESIGN.md, "Borders, lakes and a grid".
+ * At one device pixel there is no room to separate them by weight, so the
+ * hierarchy is carried entirely by colour.
+ *
+ * One list drives both projections. The flat map projects each `payload` to
+ * pixels; the globe looks its vectors up by `key`. Neither has to know what a
+ * border is.
+ */
+function layerStack(c, { primary, secondary, dash }) {
+  const s = state.settings;
+  const b = state.borders;
+  const stack = [];
+  if (s.fields) {
+    stack.push({ key: 'fields', payload: state.fields, stroke: c.grid, lineWidth: secondary });
+  }
+  if (s.overlays && state.lakes) {
+    stack.push({ key: 'lakes', payload: state.lakes, stroke: c.lake, lineWidth: secondary });
+  }
+  if (s.overlays && b) {
+    stack.push({
+      key: 'borders',
+      payload: { scale: b.scale, lines: b.lines },
+      stroke: c.border,
+      lineWidth: secondary,
+    });
+    stack.push({
+      key: 'disputed',
+      payload: { scale: b.scale, lines: b.disputed },
+      stroke: c.disputed,
+      lineWidth: secondary,
+      dash,
+    });
+  }
+  if (state.coastline) {
+    stack.push({ key: 'coastline', payload: state.coastline, stroke: c.coast, lineWidth: primary });
+  }
+  return stack;
+}
+
+/**
+ * What the pre-painted basemap depends on besides its size.
+ *
+ * The palette flips at sunrise under the auto theme, and the overlay switches
+ * change which layers exist. Both change the pixels and neither changes the
+ * canvas size, so without this the basemap would keep yesterday's colours until
+ * something happened to resize the window.
+ */
+function basemapKey() {
+  const s = state.settings;
+  // Whether the overlay files have arrived counts too: they load after the
+  // first paint, and their arrival changes the picture without touching either
+  // the palette or the switches.
+  return [
+    document.documentElement.dataset.theme,
+    s.overlays, s.fields, !!state.borders, !!state.lakes,
+  ].join('|');
+}
+
 function rebuildBasemap() {
   if (!state.coastline) return;
   const c = mapColours();
-  state.projected = projectCoastline(state.coastline, state.size.w, state.size.h);
-  state.basemap = renderCoastline(state.size.w, state.size.h, state.projected, {
-    stroke: c.coast,
-    background: c.day,
+  const { w, h } = state.size;
+  const stack = layerStack(c, {
+    primary: 1,
+    secondary: 1,
+    dash: DISPUTED_DASH.map((d) => d * state.dpr),
   });
+  state.basemap = renderBasemap(w, h, stack.map((l) => ({
+    lines: projectCoastline(l.payload, w, h),
+    stroke: l.stroke,
+    lineWidth: l.lineWidth,
+    dash: l.dash,
+  })), { background: c.day });
+
+  // Letters go on after the lines, and only on the flat map. On the globe they
+  // would have to track the rotation, and the two edges they hang off do not
+  // exist there.
+  if (state.settings.fields) {
+    drawFieldLabels(state.basemap.getContext('2d'), fieldLabels(), w, h, {
+      fill: c.grid,
+      fontPx: Math.max(11, Math.round(w / 90)),
+      pad: Math.max(3, Math.round(w / 340)),
+    });
+  }
+  state.basemapKey = basemapKey();
+}
+
+/**
+ * Fetch one overlay into `state`, or leave it null.
+ *
+ * Deliberately swallowing the error. The coastline is the map and its absence
+ * is reported in the caption; a missing borders file is a missing layer, and a
+ * wall display that refused to draw the world because it could not draw Belgium
+ * would be the worse failure. It is logged, and the map redraws without it.
+ */
+async function loadOverlay(key, url) {
+  try {
+    state[key] = await loadLayer(url);
+  } catch (err) {
+    console.error(`${key} load failed`, err);
+  }
 }
 
 /**
@@ -188,6 +305,39 @@ function bearings(view) {
   return `${ns}, ${ew}`;
 }
 
+/**
+ * Every layer as unit vectors, keyed the way layerStack asks for them.
+ *
+ * Built from the raw payloads rather than from layerStack, because the settings
+ * can be switched at any time and re-deriving 85,000 vectors on a checkbox
+ * would be visible. Absent overlays become empty arrays, which stroke to
+ * nothing.
+ */
+function prepareGlobe() {
+  const b = state.borders;
+  return {
+    coastline: globe.prepareLayer(state.coastline),
+    fields: globe.prepareLayer(state.fields),
+    lakes: state.lakes ? globe.prepareLayer(state.lakes) : [],
+    borders: b ? globe.prepareLayer({ scale: b.scale, lines: b.lines }) : [],
+    disputed: b ? globe.prepareLayer({ scale: b.scale, lines: b.disputed }) : [],
+  };
+}
+
+/** The same, thinned for the frames drawn while a finger is down. */
+function coarsenGlobe(p) {
+  return {
+    coastline: globe.decimate(p.coastline, DRAG_STRIDE),
+    lakes: globe.decimate(p.lakes, DRAG_STRIDE),
+    borders: globe.decimate(p.borders, DRAG_STRIDE),
+    // Left whole. The disputed set is 704 points, and the grid is a sampled
+    // curve -- dropping five vertices in six turns a meridian into a polygon,
+    // which is far more visible than the frame it would save.
+    disputed: p.disputed,
+    fields: p.fields,
+  };
+}
+
 function drawGlobe(now) {
   const g = state.globe;
   // Not silent. Returning with the canvas untouched leaves the previous view
@@ -204,7 +354,8 @@ function drawGlobe(now) {
   const { cx, cy, r } = globeGeometry();
   const b = globe.basis(g.view.lon0, g.view.lat0);
   // Full detail whenever the globe is still, which is nearly always.
-  const lines = g.dragging || g.anim ? g.coarse : g.prepared;
+  const prepared = g.dragging || g.anim ? g.coarse : g.prepared;
+  const weight = Math.max(1, state.dpr - 0.5);
 
   // The page background outside the disc, not the map's day colour: the globe
   // has to read as an object sitting on the page rather than a hole cut in it.
@@ -217,10 +368,13 @@ function drawGlobe(now) {
   ctx.beginPath();
   ctx.arc(cx, cy, r, 0, Math.PI * 2);
   ctx.clip();
-  globe.strokeCoastline(ctx, lines, b, cx, cy, r, {
-    stroke: c.coast,
-    lineWidth: Math.max(1, state.dpr - 0.5),
-  });
+  for (const l of layerStack(c, {
+    primary: weight,
+    secondary: weight,
+    dash: DISPUTED_DASH.map((d) => d * state.dpr),
+  })) {
+    globe.strokeLayer(ctx, prepared[l.key], b, cx, cy, r, l);
+  }
   // The same 0.62 as the flat map, for the same reason: coastlines have to stay
   // readable through the night side, because that is the half being watched.
   ctx.globalAlpha = 0.62;
@@ -339,7 +493,7 @@ function tickMap() {
   const obs = makeObserver(here.lat, here.lon);
 
   applyTheme();          // auto theme can flip at sunrise or sunset
-  if (sizeCanvas()) rebuildBasemap();
+  if (sizeCanvas() || state.basemapKey !== basemapKey()) rebuildBasemap();
   drawMap(now);
 
   render.renderSun({
@@ -388,7 +542,7 @@ function route() {
     canvas.setAttribute('aria-label', state.settings.view === 'globe'
       ? 'Rotatable globe with the day and night terminator'
       : 'World map with the day and night terminator');
-    if (sizeCanvas()) rebuildBasemap();
+    if (sizeCanvas() || state.basemapKey !== basemapKey()) rebuildBasemap();
     tickClock();
     tickMap();
     render.renderSpaceWeather(state.swx, new Date());
@@ -412,6 +566,8 @@ function onSubmit(event) {
     callsign: form.callsign.value,
     theme: form.theme.value,
     view: form.view.value,
+    overlays: form.overlays.checked,
+    fields: form.fields.checked,
   });
   // A new grid is a new home, and leaving the globe pointed at the old one
   // would be the first thing anybody noticed.
@@ -442,20 +598,35 @@ async function start() {
   route();
 
   try {
-    state.coastline = await loadCoastline();
+    state.coastline = await loadLayer('data/coastline.json');
     sizeCanvas();
     rebuildBasemap();
     // Both views are prepared regardless of the setting: it is one pass over
-    // 60,000 vertices at load, it makes switching instant, and unlike the flat
+    // 85,000 vertices at load, it makes switching instant, and unlike the flat
     // map's pixels these survive every resize.
-    state.globe.prepared = globe.prepareCoastline(state.coastline);
-    state.globe.coarse = globe.decimate(state.globe.prepared, DRAG_STRIDE);
+    state.globe.prepared = prepareGlobe();
+    state.globe.coarse = coarsenGlobe(state.globe.prepared);
     state.globe.view = globeHome();
   } catch (err) {
     // The map is the hero, but the clocks, sun times and space weather are all
     // still true without it. Say so in the one place there is room.
     render.renderMapCaption('Coastline unavailable');
     console.error('coastline load failed', err);
+  }
+
+  // Overlays load after the map is already on screen and are awaited together.
+  // A failure here costs one layer, not the map, so each is caught on its own
+  // and simply leaves its slot null.
+  await Promise.all([
+    loadOverlay('borders', 'data/borders.json'),
+    loadOverlay('lakes', 'data/lakes.json'),
+  ]);
+  // The world is already on screen without them, so fold them in rather than
+  // waiting up to a minute for the next tick to notice.
+  if (state.coastline) {
+    rebuildBasemap();
+    state.globe.prepared = prepareGlobe();
+    state.globe.coarse = coarsenGlobe(state.globe.prepared);
   }
 
   if (settings.isConfigured(state.settings)) {
