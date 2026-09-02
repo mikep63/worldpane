@@ -219,5 +219,23 @@
 </noscript>
 
 <script type="module" src="js/main.js"></script>
+
+<!--
+Offline shell. Registered after load so 900 kB of precache does not compete
+with the coastline the first paint is waiting on, and classic rather than
+module so a syntax error in the app cannot cost the display its offline
+support. See sw.js.
+-->
+<script>
+if ('serviceWorker' in navigator) {
+  addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch((err) => {
+      // Nothing to do and nobody to tell: the page works, it just will not
+      // survive a reload without network.
+      console.error('service worker registration failed', err);
+    });
+  });
+}
+</script>
 </body>
 </html>

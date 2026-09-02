@@ -22,18 +22,19 @@ shack.
 **Status: first slice running as of 2026-08-28.** Settings, clocks, sun times
 with the grey-line countdown, the terminator map, and the three NOAA numbers.
 Satellites and the scheduled Action are still deferred. The About page shipped
-2026-08-29.
+2026-08-29, and it has run offline since 2026-09-02.
 
 `PLAN.md` is the historical record from when this was `bandwatch` — its research
 is reusable and most of its decisions survive intact, but its name and platform
 choice do not. Where the two disagree, this file wins.
 
-**Checks.** Seven spec files run under the JavaScriptCore shell that ships with
-macOS, since there is no `node` here:
+**Checks.** Eight spec files run under the JavaScriptCore shell that ships with
+macOS, since there is no `node` here. Run them from the repository root —
+`check_sw.mjs` reads files relative to the working directory:
 
 ```sh
 JSC=/System/Library/Frameworks/JavaScriptCore.framework/Versions/A/Helpers/jsc
-for s in grid sun terminator map render globe graticule; do
+for s in grid sun terminator map render globe graticule sw; do
   $JSC -m spec/check_$s.mjs || break
 done
 python3 -m http.server 8080     # then open http://127.0.0.1:8080
@@ -42,7 +43,9 @@ python3 -m http.server 8080     # then open http://127.0.0.1:8080
 They check against physics and geometry rather than against previous output:
 solstice declinations, 15°/hour subsolar drift, the terminator touching the
 polar circles, and — the strongest one — the closed-form terminator agreeing
-with astronomy-engine's solar altitude to within 0.02° across four dates.
+with astronomy-engine's solar altitude to within 0.02° across four dates. The
+exception is `check_sw.mjs`, which checks the precache list against the disk and
+carries the cache-name bump — when it fails it prints the line to paste.
 
 ---
 
@@ -313,6 +316,52 @@ Two pieces of maths, both already owned:
   the same maths pointed at a different question. Carry a `spec/` fixture across
   so the two stay honest.
 - **Maidenhead grid ↔ lat/lon.** Thirty lines, needed in both directions.
+
+## Offline is a precached generation · 2026-09-02
+
+`sw.js` precaches all seventeen files — shell, modules, and the three layer
+files — and serves them cache-first with no revalidation. A reload with no
+network now draws the world; before this it drew "Coastline unavailable", which
+on a display meant to run unattended for months made an overnight router reboot
+into a dead map.
+
+The word that matters is **generation**. Assets are replaced together by an
+install or not at all, never one at a time, and the install fetches with
+`cache: 'reload'`. That is also the fix for the second problem: GitHub Pages
+serves assets with a 600-second cache and can hand a browser a fresh
+`index.html` against a stale `main.js`.
+
+The cache name is a **digest of the precached files**, computed by
+`spec/check_sw.mjs`, which fails when the two disagree and prints the line to
+paste. Rejected: **a hand-bumped version number.** Forgetting it has no symptom
+— the display keeps working, on the old code, forever — and "what survives a
+year of neglect" is the standing test. A digest cannot be forgotten because the
+check fails.
+
+Rejected: **stale-while-revalidate**, which needs no version at all and heals
+itself a reload later. It revalidates each asset independently, so a reload
+after a deploy can pair a new `index.html` with an old `main.js` — which is the
+exact failure the generation exists to end. It would also re-fetch 870 kB on
+every reload over shack wifi.
+
+Rejected: **generating `sw.js` from a script**, which is how `baseball-records`
+builds its list. There is no build step here, and seventeen paths that change a
+few times a year do not need a generator — they need a check, which is cheaper
+and catches more.
+
+Rejected: **caching the NOAA responses.** Space weather is the one thing that
+*should* fail with the network down: `spacewx.js` keeps the last reading and the
+panel says how old it is. A cache would turn an honest stale number into an
+invisible one, against "Staleness is always visible". Cross-origin requests are
+passed straight through.
+
+Two smaller departures from `baseball-records`, whose shape this otherwise
+copies: `sw.js` does not precache **itself** — the browser refetches it on
+navigation and that is the escape hatch out of a bad generation — and `./` is
+not precached **alongside `index.html`**, since one navigation fallback covers
+every in-scope URL without keeping two copies of the same file. It is a classic
+worker rather than a module, because module workers landed in Safari 16.4 and
+this runs on whatever iPad was spare.
 
 ## Draw the map, do not import one · 2026-08-17
 
@@ -646,20 +695,8 @@ expect it but leave the grey-line window starting at a stated 2° that is really
 
 # Deferred, not decided
 
-Roughly in the order they should be taken. The first is a gap in what has
-already shipped rather than a new feature, which is why it comes before
-satellites.
+Roughly in the order they should be taken.
 
-- **No offline caching, which a wall display eventually needs.** A page already
-  loaded survives a network drop: sun times and the terminator are pure local
-  maths, and space weather degrades to stale by design. But a **reload** without
-  network fails — `map.js` fetches `data/coastline.json`, and without it the map
-  is replaced by "Coastline unavailable". Since 2026-09-02 there are three files
-  to cache, not one, though only the coastline is fatal. For something meant to
-  run unattended
-  for months on shack wifi, a service worker caching the shell and the coastline
-  closes the last real fragility. `baseball-records` already does this; copy its
-  shape rather than inventing one.
 - **No README, and the repository is public.** Anyone who finds it gets no
   explanation of what it is or how to run the checks.
 - **Satellites.** PLAN.md made them the feature that earned a home-screen slot,
@@ -691,7 +728,8 @@ satellites.
 **Closed rather than pending**, so they are not picked back up: PLAN.md's
 **widget sizes** and **notification policy** both died with the phone-widget
 thesis, and its question about **openhamclock's browser build** is answered — it
-is real, hosted and live.
+is real, hosted and live. **Offline caching** shipped 2026-09-02; see "Offline
+is a precached generation".
 
 ---
 
