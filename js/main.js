@@ -637,6 +637,22 @@ function pickPass(index) {
  * of milliseconds and the page is opened deliberately, so the simpler thing is
  * also the correct one -- a cached list would quietly age past the passes in it.
  */
+function passPageShowing() {
+  return !document.getElementById('satellites').hidden;
+}
+
+/**
+ * Rebuild the pass page if it is the page on screen.
+ *
+ * Everything it needs -- element sets and the transmitter file -- arrives after
+ * the first route(), so a reload landing straight on #/satellites built the page
+ * against an empty roster and then never revisited it. Navigating there from the
+ * dashboard worked, which is what made it look intermittent rather than certain.
+ */
+function refreshPassPage() {
+  if (passPageShowing()) buildPassPage();
+}
+
 function buildPassPage() {
   const now = new Date();
   const here = toLatLon(state.settings.grid);
@@ -708,14 +724,16 @@ async function tickSpaceWeather() {
 
 function route() {
   const hash = location.hash;
-  const wantPasses = hash.startsWith('#/satellites');
   // About wins over the first-run redirect to settings: someone who lands here
   // unconfigured should still be able to read what this is and find the
   // projects that do more, without being made to enter a grid square first.
   const wantAbout = hash.startsWith('#/about');
-  const wantSettings =
-    !wantAbout && !wantPasses
+  // Settings wins over everything else, the pass page included. An unconfigured
+  // visitor landing on #/satellites was getting a pass page that could only be
+  // empty, there being no grid to compute passes for.
+  const wantSettings = !wantAbout
     && (hash.startsWith('#/settings') || !settings.isConfigured(state.settings));
+  const wantPasses = !wantAbout && !wantSettings && hash.startsWith('#/satellites');
 
   document.getElementById('about').hidden = !wantAbout;
   document.getElementById('satellites').hidden = !wantPasses;
@@ -800,8 +818,14 @@ async function start() {
       drawMap(new Date());
     }
     // The plot is sized from its own box, which a rotation changes.
-    if (!document.getElementById('satellites').hidden) showSelectedPass();
+    if (passPageShowing()) showSelectedPass();
   });
+
+  // Before route(), not after: this is a synchronous read of localStorage, and
+  // routing straight to #/satellites needs a roster to search. Doing it late
+  // cost nothing except an empty page on every reload of that route.
+  const cached = loadCachedTle();
+  if (cached) adoptTle(cached);
 
   route();
 
@@ -840,10 +864,9 @@ async function start() {
     state.globe.coarse = coarsenGlobe(state.globe.prepared);
   }
 
-  // Cached elements before the network, so a reload with no wifi still has a
-  // roster to search. The fetch below replaces them when it arrives.
-  const cached = loadCachedTle();
-  if (cached) adoptTle(cached);
+  // The transmitter file arrives with the overlays, so a pass page already on
+  // screen has no frequencies on it until it is rebuilt.
+  refreshPassPage();
 
   if (settings.isConfigured(state.settings)) {
     tickClock();
@@ -851,7 +874,12 @@ async function start() {
     tickSpaceWeather();
   }
 
-  tickTle().then(() => settings.isConfigured(state.settings) && tickMap());
+  tickTle().then(() => {
+    if (settings.isConfigured(state.settings)) tickMap();
+    // Fresh elements supersede the cached ones the page was built from, and on
+    // a first ever run there were none to cache.
+    refreshPassPage();
+  });
 
   scheduleClock();
   setInterval(() => settings.isConfigured(state.settings) && tickMap(), MAP_MS);
