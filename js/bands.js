@@ -47,11 +47,19 @@ export const STATES = ['closed', 'poor', 'fair', 'good'];
 // for a ranking finds -1 in STATES and skips it, which is the behaviour wanted.
 export const UNKNOWN = 'unknown';
 
-// Daylight and darkness, by solar altitude at the grid. The gap between them is
-// the grey line, where the D layer has decayed but the F layer has not -- so
-// neither the day rule nor the night rule is applied inside it.
+// Daylight and darkness, by solar altitude at the grid. Used for the label
+// only; the scoring below grades continuously rather than stepping at these.
 const DAY_ABOVE = 10;
 const NIGHT_BELOW = -6;
+
+// Below this the sun is up but barely, and the D layer has not built. The
+// difference between "daylight" and "low sun" in the reasons column.
+const WEAK_SUN = 0.35;
+
+// Fully dark, for absorption purposes, by the end of nautical twilight.
+const DARK_BELOW = -12;
+
+const D2R = Math.PI / 180;
 
 /** Where the sun is, as one of three words. */
 export function daylight(sunAltitude) {
@@ -59,6 +67,26 @@ export function daylight(sunAltitude) {
   if (sunAltitude > DAY_ABOVE) return 'day';
   if (sunAltitude < NIGHT_BELOW) return 'night';
   return 'grey line';
+}
+
+/**
+ * How much daylight there is, 0 to 1.
+ *
+ * Both F2 ionisation and D-layer absorption scale roughly with the cosine of
+ * the solar zenith angle, which is the sine of the altitude. Using it as a
+ * factor rather than a threshold is the difference between a sun at 14 degrees
+ * and one at 60 counting the same -- they did, and 80 m took the full noon
+ * absorption penalty an hour after sunrise. The same cliff the flux test had.
+ */
+export function dayFactor(sunAltitude) {
+  if (typeof sunAltitude !== 'number' || Number.isNaN(sunAltitude)) return 0;
+  return Math.max(0, Math.sin(sunAltitude * D2R));
+}
+
+/** How dark it is, 0 to 1, complete by the end of nautical twilight. */
+export function nightFactor(sunAltitude) {
+  if (typeof sunAltitude !== 'number' || Number.isNaN(sunAltitude)) return 0;
+  return Math.max(0, Math.min(1, sunAltitude / DARK_BELOW));
 }
 
 /**
@@ -93,33 +121,46 @@ export function bandState(band, { sfi, kp, sunAltitude }) {
     const margin = sfi - band.needsSfi;
     if (margin >= 30) {
       score += 1;
-      why.push(`flux ${Math.round(sfi)}, well past the ${band.needsSfi} it wants`);
+      why.push(`well past the ${band.needsSfi} flux it wants`);
     } else if (margin >= 0) {
       score += 0.5;
-      why.push(`flux ${Math.round(sfi)}, just past the ${band.needsSfi} it wants`);
+      why.push(`just past the ${band.needsSfi} flux it wants`);
     } else if (margin >= -20) {
       score -= 0.5;
-      why.push(`flux ${Math.round(sfi)}, short of the ${band.needsSfi} it wants`);
+      why.push(`short of the ${band.needsSfi} flux it wants`);
     } else {
       fluxStarved = true;
       score -= 1.5;
-      why.push(`flux ${Math.round(sfi)}, far short of the ${band.needsSfi} it wants`);
+      why.push(`far short of the ${band.needsSfi} flux it wants`);
     }
   }
 
-  if (band.day !== 0 && light !== 'unknown' && light !== 'grey line') {
-    const inSeason = (band.day > 0 && light === 'day') || (band.day < 0 && light === 'night');
-    if (inSeason && !fluxStarved) {
-      // Sunshine does not create F2 ionisation the flux says is not there, so a
-      // starved band gets no credit for it being noon.
-      score += 1;
-      why.push(band.day > 0 ? 'daylight here' : 'darkness here');
-    } else if (!inSeason) {
-      // A penalty rather than a shutdown: 80 m at noon is short-range and poor,
-      // not absent, and calling it closed would be the same overstatement in
-      // the other direction.
-      score -= 1;
-      why.push(band.day > 0 ? 'dark here' : 'daylight absorbs it here');
+  const day = dayFactor(sunAltitude);
+  const night = nightFactor(sunAltitude);
+
+  if (band.day !== 0 && light !== 'unknown') {
+    if (band.day > 0) {
+      // High bands live on F2 ionisation: the sun builds it and its absence
+      // takes it away, both in proportion rather than at a threshold.
+      if (!fluxStarved && day > 0) {
+        score += day;
+        why.push(day >= WEAK_SUN ? 'daylight here' : 'low sun here');
+      }
+      if (night > 0) {
+        score -= night;
+        why.push('dark here');
+      }
+    } else {
+      // Low bands are the other way about: darkness lifts them and the D layer
+      // absorbs them, again in proportion.
+      if (night > 0) {
+        score += night;
+        why.push('darkness here');
+      }
+      if (day > 0) {
+        score -= day;
+        why.push(day >= WEAK_SUN ? 'daylight absorbs it here' : 'low sun, little absorption');
+      }
     }
   } else if (light === 'grey line') {
     // The one time of day the low bands and the high bands overlap.

@@ -10,7 +10,10 @@
 // holds however the inputs move. A model that got any of those backwards would
 // still print a plausible-looking table.
 
-import { BANDS, STATES, UNKNOWN, daylight, bandState, bandStates, bestBand } from '../js/bands.js';
+import {
+  BANDS, STATES, UNKNOWN, daylight, dayFactor, nightFactor,
+  bandState, bandStates, bestBand,
+} from '../js/bands.js';
 
 let failures = 0;
 function check(name, got, want) {
@@ -29,6 +32,11 @@ check('bands are in frequency order',
 check('every band has a state word', bandStates({ sfi: 100, kp: 2, sunAltitude: 30 })
   .every((b) => STATES.includes(b.state)), true);
 check('unknown is not one of the ranked states', STATES.includes(UNKNOWN), false);
+// The flux number itself belongs in the page header, not on all eight rows.
+check('reasons do not repeat the flux figure',
+  bandStates({ sfi: 108, kp: 2, sunAltitude: 45 })
+    .every((b) => !b.why.some((w) => w.includes('108'))), true);
+
 check('the flux each band wants never decreases with frequency',
   BANDS.every((b, i) => i === 0 || b.needsSfi >= BANDS[i - 1].needsSfi), true);
 
@@ -54,6 +62,30 @@ check('more flux never makes a band worse',
 // minimum does not close it.
 check('80 m does not depend on flux',
   stateOf('80 m', { ...noon, sfi: 65 }), stateOf('80 m', { ...noon, sfi: 200 }));
+
+// --- the sun is a slope, not a step ------------------------------------------
+// Absorption and ionisation both scale with the cosine of the solar zenith
+// angle. Treating "day" as one thing made a sun at 14 degrees cost 80 m exactly
+// what a sun at 60 does, which is an hour after sunrise being charged as noon.
+check('the zenith is full daylight', dayFactor(90), 1);
+check('the horizon is none', dayFactor(0), 0);
+check('below the horizon is none', dayFactor(-20), 0);
+check('halfway up is not half',  Math.abs(dayFactor(30) - 0.5) < 1e-9, true);
+check('a low sun counts for little', dayFactor(14) < 0.3, true);
+check('and much less than a high one', dayFactor(14) < dayFactor(60) / 2, true);
+
+check('daylight is not darkness', nightFactor(20), 0);
+check('nautical twilight is fully dark', nightFactor(-12), 1);
+check('and deeper stays fully dark', nightFactor(-40), 1);
+check('civil twilight is partly dark', nightFactor(-6) > 0 && nightFactor(-6) < 1, true);
+
+// The consequence, stated on the band it matters for.
+const lowSun = { sfi: 108, kp: 2, sunAltitude: 14 };
+const highSun = { sfi: 108, kp: 2, sunAltitude: 60 };
+check('80 m suffers less under a low sun than a high one',
+  rank(stateOf('80 m', lowSun)) > rank(stateOf('80 m', highSun)), true);
+check('and 15 m gains less from it',
+  rank(stateOf('15 m', lowSun)) <= rank(stateOf('15 m', highSun)), true);
 
 // --- low bands need darkness ------------------------------------------------
 const midnight = { kp: 1, sunAltitude: -40, sfi: 120 };

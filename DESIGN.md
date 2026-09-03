@@ -915,18 +915,33 @@ index only ever subtracts, because a geomagnetic storm has never improved an HF
 path. Every threshold is a **stated convention**, as the grey line's and Bz's
 are.
 
-**Three things the checks caught, all of them the model overstating itself:**
+**Both continuous terms are slopes, not steps**, and both had to be corrected to
+become so. Absorption and F2 ionisation each scale roughly with the cosine of
+the solar zenith angle, so the sun enters as `sin(altitude)` rather than as a
+day/night flag; the flux term is graded by how far short of its rule of thumb a
+band is. `daylight()` survives as a label for the header line only.
+
+**Four things the checks and one screenshot caught, all of them the model
+overstating itself:**
 
 - Daylight was rescuing a flux-starved band, calling 10 m "poor" at flux 65 on
   the strength of it being noon. Sunshine does not create F2 ionisation the flux
   says is absent.
 - The flux test was a cliff. 12 m flipped between closed and fair across a
-  single point of flux, which is not a shape the ionosphere has. It is graded
-  now: short is not the same as far short.
+  single point of flux, which is not a shape the ionosphere has.
 - With **no flux reading at all** the daylight bonus stood unopposed and the
   table announced that 10 m was good. A band whose fate depends on a number
   nobody has is `unknown`, which is deliberately not one of the four ranked
   states — an unrateable band is not a worse band than a closed one.
+- **The sun was still a step after the flux had stopped being one.** A sun at
+  14° and one at 60° both read "day", so 80 m took the full noon absorption
+  penalty an hour after sunrise. Caught on the wall, not in a check, which is
+  the argument for looking at the thing: the same cliff had already been fixed
+  twice in the same file and was missed a third time.
+
+The flux figure is **not repeated on every row** — it is in the header line
+above them, and printing it eight times was close to a third of the text on the
+page.
 
 An earlier scoring also put almost every band on "good" or "closed" and never
 used the two words in between, which made the table less informative than the
