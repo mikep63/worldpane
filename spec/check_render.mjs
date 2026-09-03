@@ -7,7 +7,9 @@
 // wrong way, or a stale reading that reads as fresh. The DOM functions in the
 // same file are verified by looking at the page.
 
-import { hhmm, ss, duration, age, greyLineText, kpTrendText, trim } from '../js/render.js';
+import {
+  hhmm, ss, duration, age, greyLineText, nextPassText, kpTrendText, trim,
+} from '../js/render.js';
 
 let failures = 0;
 function check(name, got, want) {
@@ -76,6 +78,54 @@ check('one decimal kept', trim(1.33), '1.3');
 check('rounds up', trim(3.67), '3.7');
 check('zero', trim(0), '0');
 check('not a number', trim(undefined), '--');
+
+// --- the satellite line -----------------------------------------------------
+// Four states that have to read differently, because they mean different
+// things. The one that matters most is the difference between the last two:
+// an empty sky and no element sets are not the same news.
+
+const t0 = new Date('2026-09-03T12:00:00Z');
+const pass = (over) => ({
+  label: 'AO-7',
+  aos: new Date(t0.getTime() + 42 * 60000),
+  los: new Date(t0.getTime() + 54 * 60000),
+  peak: 47.4,
+  inProgress: false,
+  ...over,
+});
+
+check('a pass to come counts down to it',
+  nextPassText(pass(), t0).text, 'AO-7 in 42 min, peak 47\u00b0');
+check('and is not marked active', nextPassText(pass(), t0).active, false);
+
+const running = pass({ aos: new Date(t0.getTime() - 5 * 60000), inProgress: true });
+check('a pass under way says how long is left',
+  nextPassText(running, t0).text, 'AO-7 up now, 54 min left, peak 47\u00b0');
+check('and is marked active', nextPassText(running, t0).active, true);
+
+check('an empty sky says so', nextPassText(null, t0).text, 'No pass above 10\u00b0 today');
+check('no elements is a different message',
+  nextPassText(null, t0, { haveElements: false }).text, 'Satellites unavailable');
+check('and outranks the pass', nextPassText(pass(), t0, { haveElements: false }).text,
+  'Satellites unavailable');
+
+// Element age is deliberately silent until it starts to matter -- everything is
+// hours old and saying so every minute would be noise, but a week is where the
+// along-track error stops the countdown being one.
+const fresh = new Date(t0.getTime() - 2 * 86400000);
+const stale = new Date(t0.getTime() - 9 * 86400000);
+check('fresh elements are not mentioned',
+  nextPassText(pass(), t0, { elementsAt: fresh }).text, 'AO-7 in 42 min, peak 47\u00b0');
+check('stale elements are',
+  nextPassText(pass(), t0, { elementsAt: stale }).text.includes('elements 9 d old'), true);
+// Including while a pass is running. DESIGN.md's "staleness is always visible"
+// does not get a pass for the one moment the line is busiest -- elements that
+// old are exactly when the countdown on screen might be wrong.
+check('a pass under way still admits stale elements',
+  nextPassText(running, t0, { elementsAt: stale }).text.includes('elements 9 d old'), true);
+
+// Peak elevation is rounded, not truncated, and always carries its degree sign.
+check('the peak rounds', nextPassText(pass({ peak: 12.6 }), t0).text.includes('peak 13\u00b0'), true);
 
 if (failures) {
   print(`\n${failures} check(s) failed.`);

@@ -16,6 +16,9 @@ import {
 } from './map.js';
 import { graticule, fieldLabels } from './graticule.js';
 import * as symbols from './symbols.js';
+import {
+  fetchTle, parseTle, makeRecords, observerAt, nextPass,
+} from './satellites.js';
 import * as globe from './globe.js';
 import { readAll } from './spacewx.js';
 import * as settings from './settings.js';
@@ -26,6 +29,15 @@ import * as render from './render.js';
 // see scheduleClock.
 const MAP_MS = 60 * 1000;
 const SWX_MS = 15 * 60 * 1000;
+// Element sets are a fit to a moment and decay over days, not minutes; CelesTrak
+// asks not to be polled hard, and twice a day keeps a low orbit well inside the
+// accuracy that matters for "is anything coming over".
+const TLE_MS = 12 * 60 * 60 * 1000;
+// How often the roster is re-searched. The answer only changes when a pass ends
+// or a better one comes into the window, so a full search every minute would be
+// thirteen thousand propagations to redraw the same sentence.
+const PASS_MS = 10 * 60 * 1000;
+const TLE_KEY = 'worldpane.tle.v1';
 
 // Globe only. A turned globe is left turned, and a display that runs for months
 // has to put itself back: without this you walk into the shack and it is showing
@@ -80,6 +92,12 @@ const state = {
   fields: graticule(),
   basemap: null,     // pre-painted static layers
   swx: {},
+  // Element sets and the pass they imply. `sats` empty means no elements at
+  // all, which the strip says outright rather than showing an empty sky.
+  sats: [],
+  tleAt: null,
+  pass: null,
+  passAt: 0,
   basemapKey: '',    // palette and switches the basemap was painted under
   size: { w: 0, h: 0 },
   dpr: 1,
@@ -501,6 +519,76 @@ function onPointerUp(event) {
   armIdleReturn();
 }
 
+// ---------- satellites ------------------------------------------------------
+
+/**
+ * Last good element sets, kept on the device.
+ *
+ * The service worker precaches files, not fetches, so this is what makes the
+ * satellite line survive a reload with no network -- the same bargain the rest
+ * of the display makes: stale and saying so, rather than blank.
+ */
+function loadCachedTle() {
+  try {
+    const raw = localStorage.getItem(TLE_KEY);
+    if (!raw) return null;
+    const stored = JSON.parse(raw);
+    const records = parseTle(stored.text);
+    if (!records.length) return null;
+    return { records, at: new Date(stored.at) };
+  } catch {
+    return null;
+  }
+}
+
+function storeTle(text, at) {
+  try {
+    localStorage.setItem(TLE_KEY, JSON.stringify({ text, at: at.toISOString() }));
+  } catch {
+    // Sixteen kilobytes can still be refused when the quota is full or site
+    // data is blocked. The session works; it just will not survive a reload.
+  }
+}
+
+function adoptTle({ records, at }) {
+  state.sats = makeRecords(records);
+  state.tleAt = at;
+  state.passAt = 0;   // force a search against the new elements
+}
+
+async function tickTle() {
+  try {
+    const { text, records, at } = await fetchTle();
+    storeTle(text, at);
+    adoptTle({ records, at });
+  } catch (err) {
+    // Keep whatever is already loaded and let the line grow stale. A wall
+    // display that lost CelesTrak for an afternoon should still know roughly
+    // when the ISS is next over.
+    console.error('TLE fetch failed', err);
+  }
+}
+
+/**
+ * Re-search the roster when the cached answer can no longer be right.
+ *
+ * Two triggers, not one: the periodic re-search, and a pass that has now ended.
+ * Without the second the strip would go on counting down a pass that finished
+ * nine minutes ago, which is worse than saying nothing.
+ */
+function refreshPass(now) {
+  if (!state.sats.length) {
+    state.pass = null;
+    return;
+  }
+  const stale = now - state.passAt > PASS_MS;
+  const ended = state.pass && now > state.pass.los;
+  if (!stale && !ended && state.passAt) return;
+  const here = toLatLon(state.settings.grid);
+  state.pass = here ? nextPass(state.sats, observerAt(here.lat, here.lon), now) : null;
+  state.passAt = now.getTime();
+}
+
 // ---------- ticks -----------------------------------------------------------
 
 function tickClock() {
@@ -539,6 +627,12 @@ function tickMap() {
     events: horizonEvents(now, obs),
     greyLine: greyLine(now, obs),
     now,
+  });
+
+  refreshPass(now);
+  render.renderSatellite(state.pass, now, {
+    haveElements: state.sats.length > 0,
+    elementsAt: state.tleAt,
   });
 }
 
@@ -611,6 +705,7 @@ function onSubmit(event) {
   // would be the first thing anybody noticed.
   state.globe.view = globeHome();
   state.globe.anim = null;
+  state.passAt = 0;   // a new grid is a different sky
   clearTimeout(state.globe.idleTimer);
   location.hash = '#/';
   route();
@@ -667,15 +762,23 @@ async function start() {
     state.globe.coarse = coarsenGlobe(state.globe.prepared);
   }
 
+  // Cached elements before the network, so a reload with no wifi still has a
+  // roster to search. The fetch below replaces them when it arrives.
+  const cached = loadCachedTle();
+  if (cached) adoptTle(cached);
+
   if (settings.isConfigured(state.settings)) {
     tickClock();
     tickMap();
     tickSpaceWeather();
   }
 
+  tickTle().then(() => settings.isConfigured(state.settings) && tickMap());
+
   scheduleClock();
   setInterval(() => settings.isConfigured(state.settings) && tickMap(), MAP_MS);
   setInterval(() => settings.isConfigured(state.settings) && tickSpaceWeather(), SWX_MS);
+  setInterval(tickTle, TLE_MS);
 
   // Coming back from sleep can be hours later; redraw rather than wait out the
   // interval with a stale terminator on screen.

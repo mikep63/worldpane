@@ -21,20 +21,20 @@ shack.
 
 **Status: first slice running as of 2026-08-28.** Settings, clocks, sun times
 with the grey-line countdown, the terminator map, and the three NOAA numbers.
-Satellites and the scheduled Action are still deferred. The About page shipped
-2026-08-29, and it has run offline since 2026-09-02.
+The scheduled Action is still deferred. The About page shipped 2026-08-29, it
+has run offline since 2026-09-02, and the next satellite pass since 2026-09-03.
 
 `PLAN.md` is the historical record from when this was `bandwatch` — its research
 is reusable and most of its decisions survive intact, but its name and platform
 choice do not. Where the two disagree, this file wins.
 
-**Checks.** Nine spec files run under the JavaScriptCore shell that ships with
+**Checks.** Ten spec files run under the JavaScriptCore shell that ships with
 macOS, since there is no `node` here. Run them from the repository root —
 `check_sw.mjs` reads files relative to the working directory:
 
 ```sh
 JSC=/System/Library/Frameworks/JavaScriptCore.framework/Versions/A/Helpers/jsc
-for s in grid sun terminator map render globe graticule symbols sw; do
+for s in grid sun terminator map render globe graticule symbols satellites sw; do
   $JSC -m spec/check_$s.mjs || break
 done
 python3 -m http.server 8080     # then open http://127.0.0.1:8080
@@ -640,6 +640,91 @@ obliquity and the orbital inclination allow, and it drifts west more slowly than
 the Sun — which is the one test a copy-paste that left `Body.Sun` in place
 cannot pass.
 
+## Satellites are a countdown, not a panel · 2026-09-03
+
+One line of text in the Sky pane: **"ISS in 46 min, peak 11°"**. That is the
+whole feature.
+
+PLAN.md made satellites the thing that earned a home-screen slot, which was a
+phone argument, and the deferred entry that replaced it warned they were "most
+of the code and the least of the glanceable value". Both are answered the same
+way. The glanceable question is *is anything coming over soon* — footprints,
+ground tracks and pass tables are answers to questions you ask sitting down, at
+a computer, with time. A wall display gets asked from across the room.
+
+It sits under the grey line, in the pane now headed **Sky at FM17ax** rather
+than Sun, because the two are the same kind of thing: a countdown to an opening.
+That renaming is the whole layout change — no fourth pane, which would have
+given a quarter of the strip to a sentence that says "nothing for three hours"
+most of the day.
+
+**Peak elevation is always shown**, because it is what decides whether to
+bother: twelve degrees is a scratchy two minutes and seventy is easy. Passes
+peaking under **10°** are not reported at all; below that the line would say
+something almost every hour and mean nothing.
+
+Rejected: **a pass list.** More useful for planning and it is a table, and the
+strip has three panes that are not tables.
+
+Rejected: **anything on the map.** A footprint circle was the tempting one — it
+would have reused the marker and night-region machinery already there, and it
+looks good. But DESIGN.md has killed a layer for ink once already, and a
+footprint answers "who else can hear it", which is a question for a contest, not
+a glance.
+
+## SGP4 is vendored, and pinned to an old major · 2026-09-03
+
+`vendor/satellite.js` is **satellite-js 5.0.0**, MIT, 23 kB, one UMD file.
+
+The current release is 7.1.0 and it is modular ESM meant for a bundler — about
+sixty files, no single-file build — which this project has no way to consume.
+5.0.0 is the last version that ships `dist/satellite.min.js`. Pinning an old
+major would normally be a smell; here it costs nothing, because SGP4 is a fixed
+algorithm from the 2006 Vallado revision and everything 6.x and 7.x changed was
+TypeScript, WebAssembly and packaging rather than orbital mechanics.
+
+The file has **eight lines appended** and is otherwise untouched: the UMD
+wrapper already assigns `globalThis.satellite`, so re-exporting that makes it a
+valid ES module in the browser and under jsc alike. The addition is marked in
+the file. Rejected: **writing SGP4 by hand**, which is fifteen hundred lines of
+someone else's carefully validated arithmetic and the single worst place in this
+project to introduce a subtle sign error.
+
+Element sets come **direct from CelesTrak's amateur group** — 96 objects, 16 kB,
+and it does send `access-control-allow-origin: *`. Worth recording how that was
+got wrong twice: the header only appears when the request carries an `Origin`,
+so a plain `curl -I` makes it look absent. The scheduled Action is still not
+needed.
+
+The last good file is kept in `localStorage`, not in the service worker, because
+the worker precaches files rather than fetches and elements are the one thing
+here that legitimately changes. Refetched twice a day. The line says how old its
+elements are once they pass **a week**, which is where SGP4's along-track error
+on a low orbit grows past a minute — and not before, because everything is
+always hours old and saying so every minute is noise rather than honesty.
+
+## The roster is nine birds, and it will go stale · 2026-09-03
+
+`ROSTER` in `js/satellites.js`: ISS, SO-50, AO-7, RS-44, FO-29, AO-73, XW-3,
+IO-117, AO-123. FM voice, linear transponders and one digipeater.
+
+Matched on **NORAD catalog number, never on name.** CelesTrak's names carry
+suffixes that change — RS-44 arrives as `RS-44 & BREEZE-KM R/B` — and the
+number is the only stable handle.
+
+Chosen over the alternatives on the same grounds as everything else here: the
+amateur group's other eighty-seven entries are beacons and university cubesats
+nobody works, and drawing them would be ninety-six countdowns to nothing.
+Rejected: **the ISS alone**, which is the honest minimum but leaves the linear
+birds — the interesting ones — invisible. Rejected: **all 96**. Rejected: **all
+96 loaded with a curated default**, PLAN.md's own answer, which is right
+eventually but is a settings UI, and the roster has to be proved useful first.
+
+**This list is expected to rot** and that is accepted, not overlooked. Birds
+fail; AMSAT's status page is the authority on what is alive, and this file is one
+operator's shortlist meant to be edited. The parser reads all 96 regardless, so
+widening it later is an edit to an array.
+
 ## The About page credits by choice, not obligation · 2026-08-29
 
 Worldpane contains no HamClock code, data or assets, so nothing is owed to it.
@@ -801,16 +886,10 @@ Roughly in the order they should be taken.
 
 - **No README, and the repository is public.** Anyone who finds it gets no
   explanation of what it is or how to run the checks.
-- **Satellites.** PLAN.md made them the feature that earned a home-screen slot,
-  which was a phone argument. On an always-on display they are most of the code
-  and the least of the glanceable value. CelesTrak's amateur group is CORS-open
-  and returns **96 satellites**; near-Earth SGP4 stays the right scope when it
-  happens.
-
-  PLAN.md's sub-question survives and is still open: **which satellites ship by
-  default?** Its own answer was ISS, the SO-50/AO-91/AO-92 class, and the current
-  linear transponders, with the rest opt-in — the full amateur set is long and
-  mostly uninteresting.
+- **Choosing satellites in settings.** The roster is nine birds in a source
+  file. Making it editable is PLAN.md's "all 96 loaded, a curated default",
+  which was right eventually and is a settings UI; wait until the line has
+  proved itself on the wall.
 - **hamqsl and prop.kc2g.com licensing.** Now reachable via the Action, but
   reachable is not the same as permitted. N0NBH publishes the solar XML for
   embedding; republishing a normalised derivative is a different act. Check
@@ -831,7 +910,8 @@ Roughly in the order they should be taken.
 **widget sizes** and **notification policy** both died with the phone-widget
 thesis, and its question about **openhamclock's browser build** is answered — it
 is real, hosted and live. **Offline caching** shipped 2026-09-02; see "Offline
-is a precached generation".
+is a precached generation". **Satellites** shipped 2026-09-03 as one line of
+text; see "Satellites are a countdown, not a panel".
 
 ---
 

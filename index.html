@@ -31,7 +31,7 @@
     </section>
 
     <section class="group" aria-labelledby="lbl-sun">
-      <h2 id="lbl-sun" class="label">Sun at <span id="grid-label">--</span></h2>
+      <h2 id="lbl-sun" class="label">Sky at <span id="grid-label">--</span></h2>
       <!--
       Value above caption, the same shape as the Time pane rather than a
       label-and-value table. Four times in one family, with UTC the only one
@@ -42,6 +42,12 @@
       <p class="mid num" id="sunset">--:--</p>
       <p class="sub">Sunset</p>
       <p class="grey" id="greyline">&nbsp;</p>
+      <!--
+      The next satellite pass sits with the grey line because they are the same
+      kind of thing: a countdown to an opening. See DESIGN.md, "Satellites are a
+      countdown, not a panel".
+      -->
+      <p class="grey" id="satpass">&nbsp;</p>
     </section>
 
     <section class="group" aria-labelledby="lbl-swx">
@@ -149,8 +155,8 @@
     <h1>About Worldpane</h1>
     <p class="intro">
       An always-on display for a radio shack: the day and night terminator, sun
-      times with the grey-line countdown, and space weather. No installation, no
-      account, no server.
+      times with the grey-line countdown, space weather, and the next amateur
+      satellite pass. No installation, no account, no server.
     </p>
 
     <h2>Where it came from</h2>
@@ -194,6 +200,11 @@
         &mdash; public domain
       </li>
       <li><strong>NOAA SWPC</strong> &mdash; solar flux, planetary K index, GOES X-ray</li>
+      <li><strong>CelesTrak</strong> &mdash; amateur satellite element sets</li>
+      <li>
+        <strong>satellite-js</strong> by Shashwat Kandadai &mdash; MIT, the SGP4
+        propagator behind the pass countdown
+      </li>
       <li>
         <strong>astronomy-engine</strong> by Don Cross &mdash; MIT, its licence
         text ships inside the vendored file
@@ -204,7 +215,8 @@
     <p>
       Your grid square and callsign are kept on this device and never sent
       anywhere. There is no account, no server and no analytics. The only
-      network requests Worldpane makes are for space weather from NOAA.
+      network requests Worldpane makes are for space weather from NOAA and
+      satellite element sets from CelesTrak.
     </p>
 
     <h2>Licence</h2>

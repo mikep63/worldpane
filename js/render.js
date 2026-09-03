@@ -75,6 +75,48 @@ export function greyLineText(gl, now = new Date()) {
 }
 
 /** "Kp" alone says nothing; "Kp, down from 5" is the information. */
+/**
+ * The next-pass line of text.
+ *
+ * Four states, and the differences between them are the point. A pass under way
+ * is the only one where the useful number is how long is *left*; one coming is
+ * a countdown; nothing in a day is worth saying plainly rather than leaving the
+ * line blank, which would read as broken; and no element sets at all is a
+ * different failure from an empty sky and must not be dressed up as one.
+ *
+ * Peak elevation is always there because it is what decides whether to bother:
+ * a 12-degree pass is a scratchy two minutes and a 70-degree one is easy.
+ */
+export function nextPassText(pass, now = new Date(), { haveElements = true, elementsAt = null } = {}) {
+  if (!haveElements) return { text: 'Satellites unavailable', active: false };
+  if (!pass) return { text: `No pass above 10\u00b0 today${staleNote(elementsAt, now)}`, active: false };
+  const peak = `${Math.round(pass.peak)}\u00b0`;
+  if (pass.inProgress) {
+    return {
+      text: `${pass.label} up now, ${duration(pass.los - now)} left, peak ${peak}${staleNote(elementsAt, now)}`,
+      active: true,
+    };
+  }
+  return {
+    text: `${pass.label} in ${duration(pass.aos - now)}, peak ${peak}${staleNote(elementsAt, now)}`,
+    active: false,
+  };
+}
+
+// How old element sets have to be before the line admits it. Elsewhere the
+// display says how old everything is; here it would be noise, because elements
+// are always hours old and that is fine. A week is where SGP4's along-track
+// error on a low orbit grows past a minute and the countdown stops being one.
+const TLE_STALE_DAYS = 7;
+
+/** " · elements 9 d old", or nothing at all while they are fresh enough. */
+function staleNote(elementsAt, now) {
+  if (!(elementsAt instanceof Date) || Number.isNaN(elementsAt.getTime())) return '';
+  const days = (now - elementsAt) / 86400000;
+  if (days < TLE_STALE_DAYS) return '';
+  return ` \u00b7 elements ${duration(now - elementsAt)} old`;
+}
+
 export function kpTrendText(value, previous) {
   if (typeof value !== 'number' || typeof previous !== 'number') return 'Kp';
   const delta = value - previous;
@@ -110,6 +152,15 @@ export function renderSun({ grid, events, greyLine, now }) {
   el.innerHTML = '';
   el.append(...emphasise(gl.text));
   el.classList.toggle('active', gl.active);
+}
+
+/** The satellite line, under the grey line. Same shape, same reasons. */
+export function renderSatellite(pass, now = new Date(), options = {}) {
+  const line = nextPassText(pass, now, options);
+  const el = $('satpass');
+  el.innerHTML = '';
+  el.append(...emphasise(line.text));
+  el.classList.toggle('active', line.active);
 }
 
 /** Bold the duration inside the grey-line sentence without using innerHTML. */
