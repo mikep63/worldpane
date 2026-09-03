@@ -574,8 +574,16 @@ hemisphere, which is the only thing that made the station marker correct there.
 
 They are drawn **over** the night fill rather than under it. The sublunar point
 spends more than half its time on the dark side, and a marker at 38% of its
-colour is one you have to hunt for. The station is drawn last of the three: where
-the operator is sitting outranks where the sky is.
+colour is one you have to hunt for. The station is drawn last of the three, so
+it is never the mark that gets covered.
+
+Drawn last, but **not drawn largest**, and that was looked at and accepted on
+2026-09-03 rather than being an oversight. The two sky marks carry detail — rays
+and a phase — and detail needs radius; the station needs none, because a
+position is all it has to say. So the operator's dot is the smallest and plainest
+mark on the map while sitting on top of the other two. An earlier draft of this
+entry claimed the station outranked the sky, which the pixels contradicted; the
+claim was wrong, not the drawing.
 
 **Reopened the same day, before it had been on the wall an hour.** Two coloured
 discs told a reader there were two bodies but not which was which, so the
