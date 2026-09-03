@@ -40,16 +40,28 @@ vendor/astronomy.js
     Vendored unmodified; the full licence text is embedded at the top of the
     file and must stay there.
 
-data/coastline.json
-    Derived from Natural Earth's 1:50m coastline
+vendor/satellite.js
+    satellite-js 5.0.0 by Shashwat Kandadai and UCSC
+    https://github.com/shashwatak/satellite-js
+    MIT License. The upstream copyright banner is the first six lines of the
+    file and must stay there.
+
+    Not vendored unmodified. Eight lines are appended, marked as an addition,
+    re-exporting the UMD global so the file is a valid ES module: 5.0.0 is the
+    last release with a single-file build, and this project has no bundler.
+    Nothing above that block is changed.
+
+data/coastline.json, data/borders.json, data/lakes.json
+    Derived from Natural Earth's 1:50m coastline, admin-0 boundary lines and
+    lakes
     https://www.naturalearthdata.com/
     Public domain. Natural Earth asks for no attribution and grants no
-    warranty; this project credits it anyway, on the settings page.
+    warranty; this project credits it anyway, on the About page.
 
-    The file is not a verbatim copy: tools/build_coastline.py rounds every
-    coordinate to two decimal places and re-encodes it. Public domain source,
-    so the derivative carries no obligation, and it is covered by section 1
-    above as part of this repository.
+    None is a verbatim copy: tools/build_coastline.py and
+    tools/build_overlays.py quantise every coordinate and re-encode it. Public
+    domain source, so the derivatives carry no obligation, and they are covered
+    by section 1 above as part of this repository.
 
 ================================================================================
 3. NOT BUNDLED
@@ -59,3 +71,8 @@ Space weather is read live from NOAA's Space Weather Prediction Center
 (services.swpc.noaa.gov). Nothing from it is stored or redistributed here. As
 a work of the United States government it is in the public domain, but this
 project makes no claim over it and speaks for none of it.
+
+Satellite element sets are read live from CelesTrak's amateur group
+(celestrak.org). They are cached in the browser's local storage on the device
+that fetched them, and are neither stored in this repository nor redistributed
+by it. This project makes no claim over them and speaks for none of them.

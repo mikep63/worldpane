@@ -927,8 +927,6 @@ expect it but leave the grey-line window starting at a stated 2° that is really
 
 Roughly in the order they should be taken.
 
-- **No README, and the repository is public.** Anyone who finds it gets no
-  explanation of what it is or how to run the checks.
 - **A ground track or footprint on the map.** Turned down twice on ink, and the
   polar plot has since answered the pointing question that was the real reason
   to want it. Reopen only if something needs *where it is* rather than *where to
@@ -958,7 +956,10 @@ Roughly in the order they should be taken.
 thesis, and its question about **openhamclock's browser build** is answered — it
 is real, hosted and live. **Offline caching** shipped 2026-09-02; see "Offline
 is a precached generation". **Satellites** shipped 2026-09-03 as one line of
-text; see "Satellites are a countdown, not a panel".
+text plus a pass page; see "Satellites are a countdown, not a panel" and "The
+pass list is a drill-down". The **README** shipped 2026-09-03, and the LICENSE
+gained the two bundled things it had been missing: satellite-js, and the
+borders and lakes files that arrived a day after the coastline.
 
 ---
 
