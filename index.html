@@ -83,6 +83,12 @@
         </div>
       </div>
       <p class="caption" id="swx-age"></p>
+      <!--
+      Bands were cut from settings in August for having nothing band-specific
+      to point at. This is that thing. See DESIGN.md, "Band conditions are an
+      inference, and say so".
+      -->
+      <a class="passes-link" href="#/bands" id="bands-link">Band conditions</a>
     </section>
   </div>
 
@@ -195,6 +201,36 @@
   </div>
 </main>
 
+<!-- Bands -->
+<main id="bands" hidden>
+  <div class="sheet">
+    <h1>Band conditions</h1>
+    <p class="intro">
+      <strong>Derived, not predicted.</strong> This is not a propagation model
+      &mdash; it is the rough judgement an operator makes from three numbers,
+      written down. Solar flux sets the ceiling, the K index takes it away, and
+      the sun&rsquo;s angle at your own grid decides which end of the spectrum
+      is awake. It knows nothing about your antenna, your power, or where you
+      are calling.
+    </p>
+
+    <p class="band-inputs" id="band-inputs"></p>
+    <ul class="band-list" id="band-list"></ul>
+
+    <p class="colophon">
+      For a real prediction, with antennas and a path and a reliability figure,
+      use <a href="https://www.voacap.com/hf/" rel="noreferrer">VOACAP Online</a>.
+      For measured ionosphere rather than inference, see
+      <a href="https://prop.kc2g.com/" rel="noreferrer">prop.kc2g.com</a>, which
+      maps live foF2 and MUF from the GIRO ionosonde network.
+    </p>
+
+    <div class="actions">
+      <a class="secondary" href="#/">Back</a>
+    </div>
+  </div>
+</main>
+
 <!-- About -->
 <main id="about" hidden>
   <div class="sheet">
@@ -202,8 +238,8 @@
     <p class="intro">
       An always-on display for a radio shack: the day and night terminator, sun
       times with the grey-line countdown, space weather including solar wind,
-      and the next amateur satellite pass. No installation, no account, no
-      server.
+      derived band conditions, and the next amateur satellite pass. No
+      installation, no account, no server.
     </p>
 
     <h2>Where it came from</h2>

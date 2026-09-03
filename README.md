@@ -31,6 +31,8 @@ that browser.
 - **Space weather** — 10.7 cm solar flux, planetary K with its 24-hour trend
   and the A index beside it, the current GOES X-ray class, and solar wind Bz
   with wind speed. All from NOAA SWPC.
+- **Band conditions**, derived from those numbers and the sun's angle at your
+  grid. An inference, labelled as one — not a propagation model.
 
 It works offline. A service worker precaches the whole app, so a reload with no
 network still draws the world; space weather and satellite elements go stale and
@@ -60,13 +62,13 @@ and the service worker both require an origin.
 
 ## Checks
 
-Twelve spec files, run under the JavaScriptCore shell that ships with macOS.
+Thirteen spec files, run under the JavaScriptCore shell that ships with macOS.
 There is no `node` here and none is needed. Run them from the repository root;
 `check_sw.mjs` reads files relative to the working directory.
 
 ```sh
 JSC=/System/Library/Frameworks/JavaScriptCore.framework/Versions/A/Helpers/jsc
-for s in grid sun terminator map render globe graticule symbols spacewx satellites skyplot sw; do
+for s in grid sun terminator map render globe graticule symbols spacewx bands satellites skyplot sw; do
   $JSC -m spec/check_$s.mjs || break
 done
 ```
@@ -110,6 +112,7 @@ js/                 ES modules, no bundler
   satellites.js     TLE parsing, the roster, pass prediction
   skyplot.js        the polar sky plot projection
   spacewx.js        NOAA SWPC
+  bands.js          band conditions, derived from flux, K and sun angle
   settings.js       what is kept on the device
   theme.js          light/dark, auto follows your sunrise
   render.js         state to DOM, with the pure formatters at the top

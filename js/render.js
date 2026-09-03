@@ -466,3 +466,53 @@ export function renderTransmitters(list) {
     box.append(li);
   }
 }
+
+// ---------- bands -----------------------------------------------------------
+
+/**
+ * The dashboard link, which carries the headline.
+ *
+ * "(derived)" is on the dashboard and not only on the page behind it, because
+ * the dashboard is what most people will ever read. A band call with no
+ * qualifier looks like a measurement.
+ */
+export function renderBandLink(best) {
+  $('bands-link').textContent = best
+    ? `Bands: ${best.name} best now (derived)`
+    : 'Band conditions (derived)';
+}
+
+/** The table: band, state, and the reasons that produced it. */
+export function renderBands(rated, { sfi, kp, sunAltitude, light, grid }) {
+  const inputs = [];
+  inputs.push(typeof sfi === 'number' ? `Flux ${Math.round(sfi)}` : 'Flux unknown');
+  inputs.push(typeof kp === 'number' ? `K ${trim(kp)}` : 'K unknown');
+  if (typeof sunAltitude === 'number') {
+    const where = grid ? ` at ${grid}` : '';
+    inputs.push(`sun ${Math.round(sunAltitude)}\u00b0${where} \u2014 ${light}`);
+  }
+  // Showing the working, so a reader can disagree with the conclusion.
+  $('band-inputs').textContent = `From ${inputs.join(' \u00b7 ')}.`;
+
+  const list = $('band-list');
+  list.innerHTML = '';
+  for (const band of rated) {
+    const li = document.createElement('li');
+
+    const name = document.createElement('span');
+    name.className = 'band-name';
+    name.textContent = band.name;
+
+    const state = document.createElement('span');
+    state.className = 'band-state';
+    state.dataset.state = band.state;
+    state.textContent = band.state;
+
+    const why = document.createElement('span');
+    why.className = 'band-why';
+    why.textContent = band.why.join(' \u00b7 ');
+
+    li.append(name, state, why);
+    list.append(li);
+  }
+}

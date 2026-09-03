@@ -537,3 +537,44 @@ button.primary {
   font-size: 0.72rem;
   vertical-align: 0.08em;
 }
+
+/* ---------- bands -------------------------------------------------------- */
+
+.band-inputs {
+  margin: 0 0 1rem;
+  color: var(--ink-dim);
+  font-size: 0.85rem;
+}
+
+.band-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.band-list > li {
+  display: grid;
+  grid-template-columns: 4.2rem 4.5rem minmax(0, 1fr);
+  gap: 0.8rem;
+  align-items: baseline;
+  padding: 0.45rem 0;
+  border-top: 1px solid var(--rule);
+}
+.band-list > li:first-child { border-top: 0; }
+
+.band-name { font-weight: 600; white-space: nowrap; }
+.band-why { color: var(--ink-dim); font-size: 0.85rem; }
+
+/* The same three words the space weather tiles use, so a colour means the same
+   thing wherever it appears. Closed is absence rather than alarm, so it takes
+   the dim ink and not the storm red. */
+.band-state { font-weight: 600; white-space: nowrap; }
+.band-state[data-state="good"]      { color: var(--quiet); }
+.band-state[data-state="fair"]      { color: var(--ink); }
+.band-state[data-state="poor"]      { color: var(--unsettled); }
+.band-state[data-state="closed"]    { color: var(--ink-dim); }
+.band-state[data-state="unknown"]   { color: var(--ink-dim); font-weight: 400; }
+
+@media (max-width: 30rem) {
+  .band-list > li { grid-template-columns: 3.6rem 4.2rem; }
+  .band-why { grid-column: 1 / -1; }
+}

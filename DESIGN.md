@@ -28,13 +28,13 @@ has run offline since 2026-09-02, and the next satellite pass since 2026-09-03.
 is reusable and most of its decisions survive intact, but its name and platform
 choice do not. Where the two disagree, this file wins.
 
-**Checks.** Twelve spec files run under the JavaScriptCore shell that ships with
+**Checks.** Thirteen spec files run under the JavaScriptCore shell that ships with
 macOS, since there is no `node` here. Run them from the repository root —
 `check_sw.mjs` reads files relative to the working directory:
 
 ```sh
 JSC=/System/Library/Frameworks/JavaScriptCore.framework/Versions/A/Helpers/jsc
-for s in grid sun terminator map render globe graticule symbols spacewx satellites skyplot sw; do
+for s in grid sun terminator map render globe graticule symbols spacewx bands satellites skyplot sw; do
   $JSC -m spec/check_$s.mjs || break
 done
 python3 -m http.server 8080     # then open http://127.0.0.1:8080
@@ -882,6 +882,72 @@ pane height, which the strip has: this puts the space weather pane at roughly
 224 points against the 269 available at 1080x810, making it marginally the
 tallest, just past the Sky pane.
 
+## Band conditions are an inference, and say so · 2026-09-03
+
+A `#/bands` page rates the eight HF bands from **three numbers already on the
+display**: solar flux, the K index, and the sun's altitude at the operator's own
+grid. No new network, no permission, no server. The dashboard carries the
+headline as a standing link — "Bands: 15 m best now (derived)".
+
+**The word "derived" is on the dashboard and not only on the page.** The
+dashboard is what most people will ever read, and a band call with no qualifier
+looks like a measurement.
+
+This is not VOACAP and does not pretend to be, which is worth stating because
+VOACAP is the obvious thing to reach for. Rejected: **VOACAP itself.** There is
+no browser port — nothing on cdnjs, nothing on npm, no WASM build — voacap.com's
+`/api/` returns 403, and pointing every wall display at a volunteer-run site
+would be poor form. More to the point it answers a different question: VOACAP
+gives a monthly median for a stated path, antenna and power, which is a planning
+answer you get sitting down. The page links to it for exactly that.
+
+Rejected for now: **prop.kc2g.com**, which is measured foF2 and MUF from the
+GIRO ionosonde network and genuinely better than any inference. Two obstacles,
+both checked: it sends **no CORS header**, so it would need the scheduled Action
+this project has so far never required, and the licensing question is already
+open. The page links to it too.
+
+**What the model is, precisely.** Flux sets a ceiling per band, using the old
+operator's rule of thumb — 70 gets 20 m, 90 opens 17 and 15, 120 brings 12 in,
+140 makes 10 reliable. The sun's angle decides which end of the spectrum is
+awake, since the D layer absorbs the low bands by day and decays at night. The K
+index only ever subtracts, because a geomagnetic storm has never improved an HF
+path. Every threshold is a **stated convention**, as the grey line's and Bz's
+are.
+
+**Three things the checks caught, all of them the model overstating itself:**
+
+- Daylight was rescuing a flux-starved band, calling 10 m "poor" at flux 65 on
+  the strength of it being noon. Sunshine does not create F2 ionisation the flux
+  says is absent.
+- The flux test was a cliff. 12 m flipped between closed and fair across a
+  single point of flux, which is not a shape the ionosphere has. It is graded
+  now: short is not the same as far short.
+- With **no flux reading at all** the daylight bonus stood unopposed and the
+  table announced that 10 m was good. A band whose fate depends on a number
+  nobody has is `unknown`, which is deliberately not one of the four ranked
+  states — an unrateable band is not a worse band than a closed one.
+
+An earlier scoring also put almost every band on "good" or "closed" and never
+used the two words in between, which made the table less informative than the
+flux figure it came from. Neutral now reads "fair", which is what 80 m at the
+grey line should say.
+
+## Bands stay out of settings after all · 2026-09-03
+
+"A gear icon" recorded that bands would return to settings "when there is
+something band-specific to show". There now is, and they are still not returning.
+
+The cut was made because a setting that changes nothing teaches the reader the
+settings page is decorative. The condition has been met but the **need** has
+not: the page shows all eight bands, and eight rows on a page opened
+deliberately cost nothing. A band selector would be a setting whose only power
+is to *hide* information — which is a worse thing for a settings page to teach
+than being decorative.
+
+It returns if the band call ever moves somewhere space is scarce, which means
+the strip. It has not.
+
 ## The About page credits by choice, not obligation · 2026-08-29
 
 Worldpane contains no HamClock code, data or assets, so nothing is owed to it.
@@ -1059,11 +1125,6 @@ Roughly in the order they should be taken.
   second source are in play — and CelesTrak explicitly asks not to be hammered
   by many individual clients, which is an argument that only starts to apply
   when more than one person is running this.
-- **Bands return to settings when there is something band-specific to show.**
-  Recorded in "A gear icon" as the condition for undoing that cut. The obvious
-  trigger is a band-conditions readout derived from SFI and Kp — honest if
-  labelled as derived, and it would give the setting meaning. Declined for v1 as
-  beyond the first slice, not rejected.
 
 **Closed rather than pending**, so they are not picked back up: PLAN.md's
 **widget sizes** and **notification policy** both died with the phone-widget
@@ -1073,7 +1134,9 @@ is a precached generation". **Satellites** shipped 2026-09-03 as one line of
 text plus a pass page; see "Satellites are a countdown, not a panel" and "The
 pass list is a drill-down". The **README** shipped 2026-09-03, and the LICENSE
 gained the two bundled things it had been missing: satellite-js, and the
-borders and lakes files that arrived a day after the coastline.
+borders and lakes files that arrived a day after the coastline. **Band
+conditions** shipped 2026-09-03 as a derived readout, which also closed the
+question of bands returning to settings — they are not.
 
 ---
 

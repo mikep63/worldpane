@@ -9,6 +9,7 @@
 import { toLatLon, isValid } from './grid.js';
 import {
   subsolarPoint, sublunarPoint, moonPhase, horizonEvents, greyLine, makeObserver,
+  altitude,
 } from './sun.js';
 import { nightPolygon } from './terminator.js';
 import {
@@ -16,6 +17,7 @@ import {
 } from './map.js';
 import { graticule, fieldLabels } from './graticule.js';
 import * as symbols from './symbols.js';
+import { bandStates, bestBand, daylight } from './bands.js';
 import {
   fetchTle, parseTle, makeRecords, observerAt, nextPass, allPasses, passTrack,
 } from './satellites.js';
@@ -708,6 +710,10 @@ function tickMap() {
     now,
   });
 
+  // The link's headline moves with the flux, the K index and the sun, so it is
+  // rebuilt on the map tick rather than only when the page is opened.
+  render.renderBandLink(bestBand(bandConditions(now)));
+
   refreshPass(now);
   render.renderSatellite(state.pass, now, {
     haveElements: state.sats.length > 0,
@@ -717,7 +723,37 @@ function tickMap() {
 
 async function tickSpaceWeather() {
   state.swx = await readAll(state.swx);
-  render.renderSpaceWeather(state.swx, new Date());
+  const now = new Date();
+  render.renderSpaceWeather(state.swx, now);
+  // New flux or K can change every band call, including the headline.
+  render.renderBandLink(bestBand(bandConditions(now)));
+  if (!document.getElementById('bands').hidden) buildBandPage();
+}
+
+// ---------- bands -----------------------------------------------------------
+
+/**
+ * The three numbers the band call is derived from.
+ *
+ * All of them are already on screen: flux and K from NOAA, and the sun's own
+ * altitude at the operator's grid, which is the same maths the terminator runs
+ * on. Nothing here is fetched.
+ */
+function bandConditions(now = new Date()) {
+  const here = toLatLon(state.settings.grid);
+  const sunAltitude = here ? altitude(now, makeObserver(here.lat, here.lon)) : null;
+  return {
+    sfi: state.swx.flux && state.swx.flux.ok ? state.swx.flux.value : null,
+    kp: state.swx.kp && state.swx.kp.ok ? state.swx.kp.value : null,
+    sunAltitude,
+    light: daylight(sunAltitude),
+    grid: state.settings.grid,
+  };
+}
+
+function buildBandPage() {
+  const conditions = bandConditions();
+  render.renderBands(bandStates(conditions), conditions);
 }
 
 // ---------- routing ---------------------------------------------------------
@@ -734,11 +770,13 @@ function route() {
   const wantSettings = !wantAbout
     && (hash.startsWith('#/settings') || !settings.isConfigured(state.settings));
   const wantPasses = !wantAbout && !wantSettings && hash.startsWith('#/satellites');
+  const wantBands = !wantAbout && !wantSettings && !wantPasses && hash.startsWith('#/bands');
 
   document.getElementById('about').hidden = !wantAbout;
   document.getElementById('satellites').hidden = !wantPasses;
+  document.getElementById('bands').hidden = !wantBands;
   document.getElementById('settings').hidden = !wantSettings;
-  document.getElementById('dashboard').hidden = wantAbout || wantSettings || wantPasses;
+  document.getElementById('dashboard').hidden = wantAbout || wantSettings || wantPasses || wantBands;
 
   // Nothing on the About page is live, so there is nothing to render or tick.
   if (wantAbout) return;
@@ -747,6 +785,13 @@ function route() {
   // hours of orbits do not change in the minute someone spends reading them.
   if (wantPasses) {
     buildPassPage();
+    return;
+  }
+
+  // Also a snapshot. The inputs move on the space weather cadence, which is
+  // fifteen minutes; nobody reads this page for that long.
+  if (wantBands) {
+    buildBandPage();
     return;
   }
 
