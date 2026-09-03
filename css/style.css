@@ -398,7 +398,10 @@ button.primary {
 }
 .passes-link:hover { color: var(--ink); }
 
-.sheet.wide { max-width: 60rem; }
+/* `width`, not `max-width`: .sheet sets an explicit width: min(34rem, 100%),
+   so raising only the maximum left this at 34rem and changed nothing. The pass
+   list and the sky plot were sharing half of that. */
+.sheet.wide { width: min(60rem, 100%); }
 
 .passes {
   display: grid;
@@ -418,7 +421,9 @@ button.primary {
 
 .pass-list button {
   display: grid;
-  grid-template-columns: 4.6rem 1fr auto;
+  /* minmax(0, 1fr) so the middle column may shrink below its content instead of
+     forcing the row wider; the spans below then clip rather than wrap. */
+  grid-template-columns: 4.6rem minmax(0, 1fr) auto;
   gap: 0.7rem;
   align-items: baseline;
   width: 100%;
@@ -435,6 +440,17 @@ button.primary {
 .pass-list button[aria-current="true"] {
   background: var(--rule);
   color: var(--ink);
+}
+/* Never wrap, whatever the column width. A satellite name is an identifier and
+   half of one on each line is not a shorter name, it is an unreadable one --
+   and these all carry a hyphen, which is a break opportunity a browser will
+   take without being asked. AO-123 was splitting into AO- and 123. */
+.pass-list .when,
+.pass-list .who,
+.pass-list .how {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .pass-list .when { font-variant-numeric: tabular-nums; color: var(--ink); }
 .pass-list .who  { font-weight: 600; }
@@ -454,6 +470,9 @@ button.primary {
   margin: 0.6rem 0 0;
   text-align: center;
   font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .pass-facts {
@@ -462,7 +481,7 @@ button.primary {
   grid-template-columns: auto 1fr;
   gap: 0.25rem 1rem;
 }
-.pass-facts dt { color: var(--ink-dim); }
+.pass-facts dt { color: var(--ink-dim); white-space: nowrap; }
 .pass-facts dd { margin: 0; font-variant-numeric: tabular-nums; }
 
 @media (max-width: 40rem) {
