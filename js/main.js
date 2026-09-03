@@ -7,10 +7,10 @@
 //   15 min space weather, matching how often SWPC publishes
 
 import { toLatLon, isValid } from './grid.js';
-import { subsolarPoint, horizonEvents, greyLine, makeObserver } from './sun.js';
+import { subsolarPoint, sublunarPoint, horizonEvents, greyLine, makeObserver } from './sun.js';
 import { nightPolygon } from './terminator.js';
 import {
-  loadLayer, projectCoastline, renderBasemap, drawFieldLabels, drawNight, drawStation,
+  loadLayer, projectCoastline, renderBasemap, drawFieldLabels, drawNight, drawMarker,
 } from './map.js';
 import { graticule, fieldLabels } from './graticule.js';
 import * as globe from './globe.js';
@@ -33,6 +33,17 @@ const IDLE_MS = 90 * 1000;
 const HOME_MS = 900;
 // Every sixth vertex while a finger is down. See globe.decimate.
 const DRAG_STRIDE = 6;
+
+/**
+ * Marker radii, as a fraction of the canvas width.
+ *
+ * A deliberate order of size: the Sun is the largest mark on the map, the Moon
+ * a little smaller, and the operator's grid smaller still. Size is the second
+ * channel after colour, and it costs nothing to make the two sky marks read as
+ * a pair that the station is not part of.
+ */
+const MARKER = { sun: 200, moon: 250, station: 260 };
+const radiusFor = (body, w) => Math.max(4, Math.round(w / MARKER[body]));
 
 // Disputed boundaries are dashed, in CSS pixels scaled to the device. See
 // DESIGN.md, "Borders, lakes and a grid": Natural Earth flags 35 of its 390
@@ -92,6 +103,8 @@ function mapColours() {
     grid: s.getPropertyValue('--map-grid').trim(),
     gridLabel: s.getPropertyValue('--map-grid-label').trim(),
     station: s.getPropertyValue('--station').trim(),
+    sun: s.getPropertyValue('--map-sun').trim(),
+    moon: s.getPropertyValue('--map-moon').trim(),
   };
 }
 
@@ -259,12 +272,25 @@ function drawFlat(now) {
   drawNight(ctx, nightPolygon(sub, 720), w, h, c.night);
   ctx.restore();
 
+  // Over the night fill, not under it. The sublunar point is on the dark side
+  // rather more than half the time, and a marker dimmed to 38% is a marker you
+  // have to hunt for -- which is the opposite of why it is there.
+  drawMarker(ctx, sub.lat, sub.lon, w, h, {
+    fill: c.sun, stroke: c.day, radius: radiusFor('sun', w),
+  });
+  const moon = sublunarPoint(now);
+  drawMarker(ctx, moon.lat, moon.lon, w, h, {
+    fill: c.moon, stroke: c.day, radius: radiusFor('moon', w),
+  });
+
+  // Last, so it is never the mark that gets covered. Where the operator is
+  // sitting outranks where the sky is.
   const here = toLatLon(state.settings.grid);
   if (here) {
-    drawStation(ctx, here.lat, here.lon, w, h, {
+    drawMarker(ctx, here.lat, here.lon, w, h, {
       fill: c.station,
       stroke: c.day,
-      radius: Math.max(4, Math.round(w / 260)),
+      radius: radiusFor('station', w),
     });
   }
   render.renderMapCaption(`Subsolar ${sub.lat.toFixed(1)}°, ${sub.lon.toFixed(1)}°`);
@@ -384,12 +410,23 @@ function drawGlobe(now) {
 
   globe.strokeLimb(ctx, cx, cy, r, c.coast, Math.max(1, state.dpr));
 
+  // Same order as the flat map, and the far side is handled for us: drawMarker
+  // returns without drawing when the point is round the back, so the Moon
+  // simply is not there for the half of the month it is behind the globe.
+  globe.drawMarker(ctx, sub.lat, sub.lon, b, cx, cy, r, {
+    fill: c.sun, stroke: c.day, radius: radiusFor('sun', w),
+  });
+  const moon = sublunarPoint(now);
+  globe.drawMarker(ctx, moon.lat, moon.lon, b, cx, cy, r, {
+    fill: c.moon, stroke: c.day, radius: radiusFor('moon', w),
+  });
+
   const here = toLatLon(state.settings.grid);
   if (here) {
-    globe.drawStation(ctx, here.lat, here.lon, b, cx, cy, r, {
+    globe.drawMarker(ctx, here.lat, here.lon, b, cx, cy, r, {
       fill: c.station,
       stroke: c.day,
-      radius: Math.max(4, Math.round(w / 260)),
+      radius: radiusFor('station', w),
     });
   }
 

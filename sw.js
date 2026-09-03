@@ -18,7 +18,7 @@
 // Bumped by spec/check_sw.mjs, which digests the files below and fails when
 // this does not match. Nothing to remember: run the checks and paste what it
 // prints. See DESIGN.md, "Offline is a precached generation".
-const BUILD = 'f32acfce';
+const BUILD = '1cfa4d76';
 const CACHE = `worldpane-${BUILD}`;
 
 // Everything the app needs to start with no network. The check verifies each

@@ -69,6 +69,25 @@ export function subsolarPoint(date) {
 }
 
 /** Wrap to (-180, 180], the range the equirectangular projection expects. */
+/**
+ * The point on Earth with the Moon directly overhead.
+ *
+ * The same construction as the subsolar point, pointed at a different body --
+ * declination is the latitude, and the hour angle from Greenwich apparent
+ * sidereal time is the longitude. Geocentric on purpose: a subpoint is defined
+ * from the centre of the Earth, so the Moon's degree of parallax is not an
+ * error here but the thing being asked about.
+ *
+ * It runs west about 14.5 degrees an hour rather than the Sun's 15, because the
+ * Moon gains roughly half a degree a day on the stars in the same direction the
+ * Earth turns. The one-minute map tick is far finer than either needs.
+ */
+export function sublunarPoint(date) {
+  const eq = Astronomy.Equator(Body.Moon, date, GEOCENTRIC, true, true);
+  const gast = Astronomy.SiderealTime(date);
+  return { lat: eq.dec, lon: normaliseLon((eq.ra - gast) * 15) };
+}
+
 export function normaliseLon(deg) {
   let d = deg % 360;
   if (d > 180) d -= 360;

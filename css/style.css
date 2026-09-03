@@ -44,6 +44,12 @@
   --map-border-disputed: #385975;
   --map-grid:  #335069;
   --map-grid-label: #45708f;
+  /* The subsolar and sublunar markers. Warm against cool for the Sun, and a
+     pale disc for the Moon -- at three metres the pair have to separate on
+     colour alone, and they must both separate from --station, which is the one
+     mark on the map that is about the operator rather than the sky. */
+  --map-sun:   #f5c451;
+  --map-moon:  #cbd6e2;
 }
 
 :root[data-theme="light"] {
@@ -66,6 +72,8 @@
   --map-border-disputed: #859db2;
   --map-grid:  #93a9bc;
   --map-grid-label: #6c88a0;
+  --map-sun:   #c47f05;
+  --map-moon:  #5d7085;
 }
 
 * { box-sizing: border-box; }

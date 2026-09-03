@@ -1,4 +1,4 @@
-// Equirectangular world map: coastline, overlays, night, station marker.
+// Equirectangular world map: coastline, overlays, night, and the markers.
 //
 // The projection is deliberately the trivial one -- longitude and latitude map
 // linearly to x and y. See DESIGN.md, "Flat equirectangular, not a globe".
@@ -141,8 +141,15 @@ export function drawNight(ctx, polygon, w, h, fill) {
   ctx.restore();
 }
 
-/** The operator's grid square: a ring, sized to read at three metres. */
-export function drawStation(ctx, lat, lon, w, h, { stroke, fill, radius = 5 }) {
+/**
+ * A filled disc with a halo, at a lat/lon.
+ *
+ * Three things use it -- the operator's grid, and the points with the Sun and
+ * the Moon overhead -- so it is named for the shape rather than for the first
+ * caller. The halo is what makes it survive a busy coastline: a bare disc in
+ * the operator's colour disappears into a lake at three metres.
+ */
+export function drawMarker(ctx, lat, lon, w, h, { stroke, fill, radius = 5 }) {
   const { x, y } = project(lon, lat, w, h);
   ctx.save();
   ctx.beginPath();

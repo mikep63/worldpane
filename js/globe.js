@@ -401,8 +401,14 @@ export function fillNight(ctx, region, cx, cy, r, fill) {
   ctx.restore();
 }
 
-/** The operator's grid square, when it is on this side of the world. */
-export function drawStation(ctx, lat, lon, b, cx, cy, r, { stroke, fill, radius = 5 }) {
+/**
+ * A filled disc at a lat/lon, when it is on this side of the world.
+ *
+ * The visibility test is the whole difference from the flat map's version: a
+ * point on the far hemisphere must not be drawn at the mirrored place on the
+ * near one. Returns whether it was drawn, so a caller can say so.
+ */
+export function drawMarker(ctx, lat, lon, b, cx, cy, r, { stroke, fill, radius = 5 }) {
   const p = toVec(lon, lat);
   if (dot(p, b.v) < 0) return false;
   ctx.save();

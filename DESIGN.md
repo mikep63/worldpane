@@ -565,6 +565,51 @@ another fetch that fails on a reload with no network. They fail softly — a
 missing overlay costs its own layer and nothing else, unlike the coastline —
 but there are now three files to cache instead of one.
 
+## The Sun and the Moon are marked, plainly · 2026-09-02
+
+Two filled discs: the point with the Sun overhead, and the point with the Moon
+overhead. Both projections draw them, and on the globe they disappear round the
+back for free — `drawMarker` already refused to draw a point on the far
+hemisphere, which is the only thing that made the station marker correct there.
+
+They are drawn **over** the night fill rather than under it. The sublunar point
+spends more than half its time on the dark side, and a marker at 38% of its
+colour is one you have to hunt for. The station is drawn last of the three: where
+the operator is sitting outranks where the sky is.
+
+Size runs Sun, Moon, station, largest first, so the two sky marks read as a pair
+the station is not part of. Colour does the real work — warm for the Sun, pale
+for the Moon, against a `--station` that is neither — and size is the second
+channel behind it.
+
+Worth being honest that the two markers are not equally useful. The **Sun** is
+close to redundant: the terminator already says where it is, since the subsolar
+point is just the centre of the lit half. It earns its place by being faster to
+read than a boundary, not by being new. The **Moon** is genuinely new — nothing
+else on the display carries it, and for EME the sublunar point is the geometry
+that sets the mutual window.
+
+Rejected for now: **a phase-shaped Moon.** The maths is already vendored —
+`Illumination` and `MoonPhase` are both in astronomy-engine — so this stays
+cheap whenever it is wanted. Deferred rather than dismissed, because a crescent
+is a design question that wants looking at from across the room before it wants
+coding, and DESIGN.md's rule about ink at three metres has already killed one
+layer.
+
+Rejected: **shading where the Moon is up.** A second great-circle region over
+the map, competing with the terminator that is the reason the map exists.
+
+Rejected: **the sublunar coordinates in the caption.** It already carries the
+subsolar point, and a second pair of numbers at that size is not something
+anyone reads at three metres.
+
+The sublunar point is checked in `spec/check_sun.mjs` against the Moon's own
+phases rather than an almanac: its subpoint nearly coincides with the Sun's at
+new moon and is nearly antipodal at full, it stays inside the ±28.6° that the
+obliquity and the orbital inclination allow, and it drifts west more slowly than
+the Sun — which is the one test a copy-paste that left `Body.Sun` in place
+cannot pass.
+
 ## The About page credits by choice, not obligation · 2026-08-29
 
 Worldpane contains no HamClock code, data or assets, so nothing is owed to it.
