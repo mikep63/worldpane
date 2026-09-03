@@ -45,11 +45,16 @@
       <!--
       The next satellite pass sits with the grey line because they are the same
       kind of thing: a countdown to an opening. See DESIGN.md, "Satellites are a
-      countdown, not a panel". The line is also the way in to the pass list --
-      tapping the thing you are reading about is the only affordance that needs
-      no explaining.
+      countdown, not a panel".
       -->
-      <a class="grey passlink" id="satpass" href="#/satellites">&nbsp;</a>
+      <p class="grey" id="satpass">&nbsp;</p>
+      <!--
+      The way in to the pass list, and deliberately separate from the line
+      above: the countdown changes with the sky and sometimes says there is
+      nothing, while the door to the list is always in the same place saying
+      the same thing.
+      -->
+      <a class="passes-link" href="#/satellites">Passes at <span id="passes-grid">--</span></a>
     </section>
 
     <section class="group" aria-labelledby="lbl-swx">

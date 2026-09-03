@@ -676,10 +676,19 @@ what was added is a page behind it. See "The pass list is a drill-down".
 
 ## The pass list is a drill-down, and that is not a new thesis · 2026-09-03
 
-Tapping the pass line opens `#/satellites`: the next twenty-four hours above
-10°, and a **polar sky plot** of whichever pass is selected — north up, horizon
-at the rim, zenith at the centre, with rise, peak and set marked and their
-bearings given as both degrees and compass points.
+A standing **"Passes at FM17ax ›"** link under the countdown opens
+`#/satellites`: the next twenty-four hours above 10°, and a **polar sky plot**
+of whichever pass is selected — north up, horizon at the rim, zenith at the
+centre, with rise, peak and set marked and their bearings given as both degrees
+and compass points.
+
+The link is deliberately **separate from the pass line and always present**. The
+first version made the countdown itself the link, which failed twice over: it
+was styled as the sentence it is, so nothing said it could be tapped, and on the
+days it read "No pass above 10° today" there was no hint a list existed at all.
+A door has to be in the same place whether or not there is anything through it.
+The chevron carries the affordance; an underline would make a wall display look
+like a web page.
 
 This looks like a departure from "Gear in a corner. Nothing else." It is not.
 `#/settings` and `#/about` have been hash-routed pages behind a tap since the

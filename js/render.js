@@ -166,6 +166,9 @@ export function renderClocks(now) {
 
 export function renderSun({ grid, events, greyLine, now }) {
   $('grid-label').textContent = grid || '--';
+  // The link names the grid too, so it says where the passes are before you
+  // follow it rather than after.
+  $('passes-grid').textContent = grid || '--';
   $('sunrise').textContent = events.sunrise ? hhmm(events.sunrise) : '—';
   $('sunset').textContent = events.sunset ? hhmm(events.sunset) : '—';
   const gl = greyLineText(greyLine, now);

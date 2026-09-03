@@ -381,14 +381,22 @@ button.primary {
 
 /* ---------- passes ------------------------------------------------------- */
 
-/* The pass line in the strip is the way in to the list. Styled as text, not as
-   a link: a wall display with a blue underline on it looks like a web page. */
-.passlink {
-  display: block;
-  color: inherit;
+/* The standing way in to the pass list. Quiet enough not to compete with the
+   numbers above it, and obvious enough to be seen as a door -- which the pass
+   line was not, being styled as the sentence it is. The chevron does that work;
+   an underline would make a wall display look like a web page. */
+.passes-link {
+  display: inline-block;
+  margin: 0.5rem 0 0;
+  color: var(--ink-dim);
+  font-size: 0.85rem;
   text-decoration: none;
 }
-.passlink:hover { color: var(--ink); }
+.passes-link::after {
+  content: " \203A";
+  font-weight: 600;
+}
+.passes-link:hover { color: var(--ink); }
 
 .sheet.wide { max-width: 60rem; }
 
