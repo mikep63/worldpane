@@ -1,8 +1,9 @@
 // Space weather from NOAA SWPC.
 //
-// Three endpoints, all CORS-open and tiny -- the flux one is 47 bytes. See
-// DESIGN.md, "First slice". They are fetched directly rather than through the
-// scheduled Action, which is insulation this does not need yet.
+// Five endpoints, all CORS-open and tiny -- the flux one is 47 bytes and the
+// two solar wind files are 59 and 60. See DESIGN.md, "First slice". They are
+// fetched directly rather than through the scheduled Action, which is
+// insulation this does not need yet.
 //
 // Nothing here throws. A display that runs unattended for months will lose the
 // network sometimes, and the honest response is to keep the last good reading
@@ -15,6 +16,11 @@ const SOURCES = {
   flux: `${BASE}/products/summary/10cm-flux.json`,
   kp: `${BASE}/products/noaa-planetary-k-index.json`,
   xray: `${BASE}/json/goes/primary/xray-flares-latest.json`,
+  // Two files for one reading, 59 and 60 bytes. Smaller together than the
+  // flux endpoint, and the pair is one panel: Bz is the number and the wind
+  // speed is the context for it.
+  windSpeed: `${BASE}/products/summary/solar-wind-speed.json`,
+  magField: `${BASE}/products/summary/solar-wind-mag-field.json`,
 };
 
 const TIMEOUT_MS = 15000;
@@ -92,10 +98,39 @@ async function readXray() {
   };
 }
 
-const READERS = { flux: readFlux, kp: readKp, xray: readXray };
+/**
+ * Solar wind: Bz, with speed alongside it.
+ *
+ * The one leading indicator on the display. Kp is a three-hour index and says
+ * what already happened; southward Bz is what couples solar wind energy into
+ * the magnetosphere in the first place, so it moves first and Kp follows an
+ * hour or two later. For an operator watching a path about to degrade, that is
+ * the difference between a warning and a post-mortem.
+ *
+ * Both files or neither: a speed with no field, or a field with no speed, is
+ * half a panel, and the stale-rather-than-blank rule already covers the case.
+ */
+async function readWind() {
+  const [speed, mag] = await Promise.all([
+    getJson(SOURCES.windSpeed),
+    getJson(SOURCES.magField),
+  ]);
+  const s = Array.isArray(speed) ? speed[0] : null;
+  const m = Array.isArray(mag) ? mag[0] : null;
+  if (!s || typeof s.proton_speed !== 'number') throw new Error('unexpected solar wind payload');
+  if (!m || typeof m.bz_gsm !== 'number') throw new Error('unexpected magnetic field payload');
+  return {
+    value: m.bz_gsm,
+    speed: Math.round(s.proton_speed),
+    bt: typeof m.bt === 'number' ? m.bt : null,
+    at: parseUtc(m.time_tag) || parseUtc(s.time_tag),
+  };
+}
+
+const READERS = { flux: readFlux, kp: readKp, xray: readXray, wind: readWind };
 
 /**
- * Read all three, independently.
+ * Read every source, independently.
  *
  * `previous` is the last successful result, so a source that fails this time
  * keeps its old reading and grows stale rather than vanishing. Each entry comes
@@ -126,6 +161,25 @@ export function kpBand(kp) {
   if (typeof kp !== 'number') return 'unknown';
   if (kp < 4) return 'quiet';
   if (kp < 5) return 'unsettled';
+  return 'storm';
+}
+
+/**
+ * Severity band for Bz in nanotesla.
+ *
+ * Negative is southward and southward is what matters; a northward field shuts
+ * the coupling off however strong it is, which is why this is not a magnitude.
+ *
+ * The boundaries are a **stated convention**, as the grey line's are. The
+ * physics supplies no threshold -- coupling scales smoothly and depends on how
+ * long the field holds -- but -3 is where it stops being noise and -8 is where
+ * operators start watching for aurora. Say so in the interface rather than
+ * implying a measurement.
+ */
+export function bzBand(bz) {
+  if (typeof bz !== 'number') return 'unknown';
+  if (bz > -3) return 'quiet';
+  if (bz > -8) return 'unsettled';
   return 'storm';
 }
 

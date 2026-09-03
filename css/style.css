@@ -205,8 +205,17 @@ body {
 .grey strong { color: var(--ink); font-weight: 600; }
 .grey.active strong { color: var(--unsettled); }
 
-.tiles { display: flex; gap: 1.1rem; }
-.tile { flex: 1 1 0; min-width: 0; }
+/* Two by two, not four across. A fourth tile in a row leaves each about seventy
+   points wide, and the captions are the casualty -- "Kp, down from 5 · A 8" has
+   to wrap three times to fit. Two columns give every tile half the pane and
+   more room than the old three-across had, so the trend line reads on one line
+   for the first time. The cost is pane height, which the strip has. */
+.tiles {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.55rem 1.1rem;
+}
+.tile { min-width: 0; }
 .tile .big { font-size: clamp(1.6rem, 5.2vh, 2.7rem); }
 
 .tile[data-band="quiet"]     .big { color: var(--quiet); }

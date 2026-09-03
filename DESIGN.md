@@ -28,13 +28,13 @@ has run offline since 2026-09-02, and the next satellite pass since 2026-09-03.
 is reusable and most of its decisions survive intact, but its name and platform
 choice do not. Where the two disagree, this file wins.
 
-**Checks.** Eleven spec files run under the JavaScriptCore shell that ships with
+**Checks.** Twelve spec files run under the JavaScriptCore shell that ships with
 macOS, since there is no `node` here. Run them from the repository root —
 `check_sw.mjs` reads files relative to the working directory:
 
 ```sh
 JSC=/System/Library/Frameworks/JavaScriptCore.framework/Versions/A/Helpers/jsc
-for s in grid sun terminator map render globe graticule symbols satellites skyplot sw; do
+for s in grid sun terminator map render globe graticule symbols spacewx satellites skyplot sw; do
   $JSC -m spec/check_$s.mjs || break
 done
 python3 -m http.server 8080     # then open http://127.0.0.1:8080
@@ -824,6 +824,63 @@ anything needed it.
 
 Attribution is on the About page and in the file's own `source` and `license`
 fields, so a copy that escapes the repository still says where it came from.
+
+## Bz is the one number that looks forward · 2026-09-03
+
+The space weather pane gained two readings, and neither cost much.
+
+**The A index was already being fetched and thrown away.** `readKp` has always
+pulled `a_running` out of the Kp payload and nothing rendered it. Kp is the
+three-hour index and A is the day; conditions are quoted as the pair — "SFI 118,
+A 8, K 2" — and one without the other is half the picture. It joins the Kp
+tile's trend caption at no network cost whatever.
+
+**Bz and solar wind speed are 119 bytes**, across two summary endpoints smaller
+together than the flux one. Bz earns a tile of its own because it is the only
+thing on the display that **leads** rather than reports: Kp says what the last
+three hours did, while southward Bz is what couples solar wind energy into the
+magnetosphere in the first place, so it moves first and Kp follows an hour or
+two behind. For an operator watching a path about to go, that is the difference
+between a warning and a post-mortem.
+
+The **sign is the meaning, and the tile shows it explicitly** — `+4` and `-4`
+are opposite news, and a northward field shuts the coupling off however strong
+it is. So `bzBand` is not a magnitude test; a magnitude test would paint a
+strongly northward field as a storm, in the one colour a reader takes at face
+value from across the room. Its boundaries, −3 and −8, are a **stated
+convention** exactly as the grey line's are: coupling scales smoothly and
+depends on how long the field holds, so the physics supplies no threshold.
+
+Wind speed goes in the tile's caption rather than a tile of its own. It is
+context for Bz, not a reading anyone acts on alone.
+
+Rejected: **`noaa-scales.json`** (1.1 kB), the R/S/G scales in plain language.
+Readable, but it mostly restates the Kp and X-ray numbers already on screen.
+
+Rejected: **the aurora oval**, `json/ovation_aurora_latest.json`. It is a real
+map layer and genuinely useful for VHF, and it is **920 kB every five minutes**.
+That is a hundred times the rest of the display's traffic put together, and
+unlike every other map layer it cannot be precached — it would be the first
+thing on the map that vanishes offline. Reopen deliberately or not at all.
+
+Rejected on size: **`alerts.json`** (40 kB of prose), **proton flux** (230 kB
+for what the S-scale gives in one), and the **solar cycle indices** (512 kB of
+monthly figures back to 1749, which are history rather than conditions).
+Current sunspot number turns out to have no small endpoint at all —
+`products/summary/solar-regions.json` returns 404.
+
+## Four tiles, two by two · 2026-09-03
+
+The space weather tiles were a flex row and a fourth would have left each about
+seventy points wide. The captions are what breaks first: "Kp, down from 5 · A 8"
+needs three lines at that width, and it is the caption carrying DESIGN.md's own
+rule that a trend is information where a bare number is trivia.
+
+Two columns give every tile half the pane — **more room than the three-across
+layout had** — so the trend reads on one line for the first time. The cost is
+pane height, which the strip has: this puts the space weather pane at roughly
+224 points against the 269 available at 1080x810, making it marginally the
+tallest, just past the Sky pane.
 
 ## The About page credits by choice, not obligation · 2026-08-29
 

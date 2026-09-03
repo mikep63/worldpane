@@ -28,8 +28,9 @@ that browser.
   next 24 hours of passes and a polar sky plot of any one of them, with rise,
   peak and set bearings in degrees and compass points, and the satellite's
   published frequencies and modes.
-- **Space weather** — 10.7 cm solar flux, planetary K with its 24-hour trend,
-  and the current GOES X-ray class, all from NOAA SWPC.
+- **Space weather** — 10.7 cm solar flux, planetary K with its 24-hour trend
+  and the A index beside it, the current GOES X-ray class, and solar wind Bz
+  with wind speed. All from NOAA SWPC.
 
 It works offline. A service worker precaches the whole app, so a reload with no
 network still draws the world; space weather and satellite elements go stale and
@@ -59,13 +60,13 @@ and the service worker both require an origin.
 
 ## Checks
 
-Eleven spec files, run under the JavaScriptCore shell that ships with macOS.
+Twelve spec files, run under the JavaScriptCore shell that ships with macOS.
 There is no `node` here and none is needed. Run them from the repository root;
 `check_sw.mjs` reads files relative to the working directory.
 
 ```sh
 JSC=/System/Library/Frameworks/JavaScriptCore.framework/Versions/A/Helpers/jsc
-for s in grid sun terminator map render globe graticule symbols satellites skyplot sw; do
+for s in grid sun terminator map render globe graticule symbols spacewx satellites skyplot sw; do
   $JSC -m spec/check_$s.mjs || break
 done
 ```

@@ -72,6 +72,15 @@
           <p class="big num" id="xray">--</p>
           <p class="sub">X-ray</p>
         </div>
+        <!--
+        Bz is the only leading indicator here: Kp says what the last three
+        hours did, Bz says what the next two will. See DESIGN.md, "Bz is the
+        one number that looks forward".
+        -->
+        <div class="tile" id="tile-bz">
+          <p class="big num" id="bz">--</p>
+          <p class="sub" id="bz-sub">Bz nT</p>
+        </div>
       </div>
       <p class="caption" id="swx-age"></p>
     </section>
@@ -192,8 +201,9 @@
     <h1>About Worldpane</h1>
     <p class="intro">
       An always-on display for a radio shack: the day and night terminator, sun
-      times with the grey-line countdown, space weather, and the next amateur
-      satellite pass. No installation, no account, no server.
+      times with the grey-line countdown, space weather including solar wind,
+      and the next amateur satellite pass. No installation, no account, no
+      server.
     </p>
 
     <h2>Where it came from</h2>
@@ -236,7 +246,7 @@
         <strong>Natural Earth</strong> coastline, country boundaries and lakes
         &mdash; public domain
       </li>
-      <li><strong>NOAA SWPC</strong> &mdash; solar flux, planetary K index, GOES X-ray</li>
+      <li><strong>NOAA SWPC</strong> &mdash; solar flux, planetary K and A, GOES X-ray, solar wind</li>
       <li><strong>CelesTrak</strong> &mdash; amateur satellite element sets</li>
       <li>
         <strong>SatNOGS DB</strong> by the Libre Space Foundation &mdash;

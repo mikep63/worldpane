@@ -5,7 +5,7 @@
 // page. Splitting them that way keeps the part that can be wrong silently --
 // arithmetic on times -- under test.
 
-import { kpBand, xrayBand } from './spacewx.js';
+import { kpBand, xrayBand, bzBand } from './spacewx.js';
 import * as skyplot from './skyplot.js';
 
 const $ = (id) => document.getElementById(id);
@@ -153,11 +153,28 @@ export function mhz(hz) {
   return four.endsWith('0') ? four.slice(0, -1) : four;
 }
 
-export function kpTrendText(value, previous) {
-  if (typeof value !== 'number' || typeof previous !== 'number') return 'Kp';
+export function kpTrendText(value, previous, aRunning = null) {
+  // The A index rides along because it is already in the Kp payload and was
+  // being discarded. Kp is the three-hour index and A is the day: every
+  // propagation chart quotes the pair, and one without the other is half the
+  // picture.
+  const a = typeof aRunning === 'number' ? ` \u00b7 A ${Math.round(aRunning)}` : '';
+  if (typeof value !== 'number' || typeof previous !== 'number') return `Kp${a}`;
   const delta = value - previous;
-  if (Math.abs(delta) < 0.5) return 'Kp, steady';
-  return `Kp, ${delta < 0 ? 'down' : 'up'} from ${trim(previous)}`;
+  if (Math.abs(delta) < 0.5) return `Kp, steady${a}`;
+  return `Kp, ${delta < 0 ? 'down' : 'up'} from ${trim(previous)}${a}`;
+}
+
+/**
+ * Bz, signed, because the sign is the whole meaning.
+ *
+ * A northward field shuts the coupling off however strong it is, so "+4" and
+ * "-4" are opposite news and a bare "4" is not news at all. The plus is
+ * explicit for the same reason.
+ */
+export function bzText(bz) {
+  if (typeof bz !== 'number' || Number.isNaN(bz)) return '--';
+  return bz > 0 ? `+${trim(bz)}` : trim(bz);
 }
 
 /** Kp arrives as 1.33 or 3.67; a wall display wants 1.3, and 2 rather than 2.0. */
@@ -217,17 +234,25 @@ export function renderSpaceWeather(swx, now = new Date()) {
   setTile('flux', swx.flux, (v) => String(v), () => 'quiet');
   setTile('kp', swx.kp, (v) => trim(v), kpBand);
   setTile('xray', swx.xray, (v) => v, xrayBand);
+  setTile('bz', swx.wind, bzText, bzBand);
 
   $('kp-trend').textContent = swx.kp && swx.kp.ok
-    ? kpTrendText(swx.kp.value, swx.kp.previous)
+    ? kpTrendText(swx.kp.value, swx.kp.previous, swx.kp.aRunning)
     : 'Kp';
 
-  // One age line for the group: they refresh together, so three would be noise.
-  const times = ['flux', 'kp', 'xray']
+  // Wind speed is context for Bz rather than a reading of its own, so it sits
+  // in the caption where Bz's own tile stays a single number.
+  $('bz-sub').textContent = swx.wind && swx.wind.ok && typeof swx.wind.speed === 'number'
+    ? `Bz nT \u00b7 ${swx.wind.speed} km/s`
+    : 'Bz nT';
+
+  // One age line for the group: they refresh together, so four would be noise.
+  const keys = ['flux', 'kp', 'xray', 'wind'];
+  const times = keys
     .map((k) => swx[k] && swx[k].at)
     .filter((d) => d instanceof Date);
   const oldest = times.length ? new Date(Math.min(...times)) : null;
-  const failed = ['flux', 'kp', 'xray'].filter((k) => swx[k] && !swx[k].ok);
+  const failed = keys.filter((k) => swx[k] && !swx[k].ok);
   const parts = [];
   if (oldest) parts.push(age(oldest, now) || `updated ${hhmm(oldest, { utc: true })}Z`);
   if (failed.length) parts.push(`${failed.join(', ')} unreachable`);

@@ -9,7 +9,7 @@
 
 import {
   hhmm, ss, duration, age, greyLineText, nextPassText, compass, bearing, mhz,
-  kpTrendText, trim,
+  kpTrendText, bzText, trim,
 } from '../js/render.js';
 
 let failures = 0;
@@ -161,6 +161,25 @@ check('ten gigahertz does not lose its scale', mhz(10460000000), '10460.000');
 check('HF is fine too', mhz(29400000), '29.400');
 check('nothing is empty, not NaN', mhz(null), '');
 check('and so is a missing frequency', mhz(undefined), '');
+
+// --- the A index rides with Kp ----------------------------------------------
+// It was already in the Kp payload and being discarded. The pair is how
+// conditions are quoted, so neither should appear without the other.
+check('A joins the trend', kpTrendText(2, 5, 8), 'Kp, down from 5 \u00b7 A 8');
+check('and the steady case', kpTrendText(2, 2, 8), 'Kp, steady \u00b7 A 8');
+check('and the unknown case', kpTrendText(null, null, 8), 'Kp \u00b7 A 8');
+check('A rounds', kpTrendText(2, 2, 7.6), 'Kp, steady \u00b7 A 8');
+check('no A, no clause', kpTrendText(2, 5), 'Kp, down from 5');
+check('and a missing A is not printed as null', kpTrendText(2, 5, null), 'Kp, down from 5');
+
+// --- Bz keeps its sign ------------------------------------------------------
+// Northward shuts the coupling off however strong it is, so +4 and -4 are
+// opposite news and a bare 4 is not news at all.
+check('southward is negative', bzText(-7), '-7');
+check('northward carries an explicit plus', bzText(4), '+4');
+check('zero is neither', bzText(0), '0');
+check('fractions survive', bzText(-2.5), '-2.5');
+check('a missing reading is not NaN', bzText(null), '--');
 
 if (failures) {
   print(`\n${failures} check(s) failed.`);
