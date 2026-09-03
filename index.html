@@ -45,9 +45,11 @@
       <!--
       The next satellite pass sits with the grey line because they are the same
       kind of thing: a countdown to an opening. See DESIGN.md, "Satellites are a
-      countdown, not a panel".
+      countdown, not a panel". The line is also the way in to the pass list --
+      tapping the thing you are reading about is the only affordance that needs
+      no explaining.
       -->
-      <p class="grey" id="satpass">&nbsp;</p>
+      <a class="grey passlink" id="satpass" href="#/satellites">&nbsp;</a>
     </section>
 
     <section class="group" aria-labelledby="lbl-swx">
@@ -146,6 +148,33 @@
       <a href="#/about">About Worldpane</a> &mdash; where it came from, what it
       is built from, and what it does with your data.
     </p>
+  </div>
+</main>
+
+<!-- Passes -->
+<main id="satellites" hidden>
+  <div class="sheet wide">
+    <h1>Passes at <span id="pass-grid">--</span></h1>
+    <p class="intro">
+      Next 24&nbsp;hours, above 10&deg;. Times are local; bearings are true, not
+      magnetic. Pick a pass to see its track across the sky.
+    </p>
+
+    <div class="passes">
+      <ol class="pass-list" id="pass-list"></ol>
+
+      <div class="pass-detail">
+        <canvas id="skyplot" aria-label="Track of the selected pass across the sky"></canvas>
+        <p class="pass-title" id="pass-title">&nbsp;</p>
+        <dl class="pass-facts" id="pass-facts"></dl>
+      </div>
+    </div>
+
+    <p class="colophon" id="pass-note"></p>
+
+    <div class="actions">
+      <a class="secondary" href="#/">Back</a>
+    </div>
   </div>
 </main>
 

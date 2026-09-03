@@ -17,7 +17,7 @@ import {
 import { graticule, fieldLabels } from './graticule.js';
 import * as symbols from './symbols.js';
 import {
-  fetchTle, parseTle, makeRecords, observerAt, nextPass,
+  fetchTle, parseTle, makeRecords, observerAt, nextPass, allPasses, passTrack,
 } from './satellites.js';
 import * as globe from './globe.js';
 import { readAll } from './spacewx.js';
@@ -98,6 +98,11 @@ const state = {
   tleAt: null,
   pass: null,
   passAt: 0,
+  // The pass list page. Computed only when that page is opened -- a wall
+  // display should not walk twenty-four hours of orbits for a screen nobody
+  // is looking at.
+  passList: [],
+  selectedPass: 0,
   basemapKey: '',    // palette and switches the basemap was painted under
   size: { w: 0, h: 0 },
   dpr: 1,
@@ -589,6 +594,59 @@ function refreshPass(now) {
   state.passAt = now.getTime();
 }
 
+/** Colours for the sky plot, read from CSS like the map's. */
+function skyColours() {
+  const s = getComputedStyle(document.documentElement);
+  return {
+    ring: s.getPropertyValue('--map-grid').trim(),
+    label: s.getPropertyValue('--ink-dim').trim(),
+    track: s.getPropertyValue('--sky-track').trim(),
+    ends: s.getPropertyValue('--ink-mid').trim(),
+    peak: s.getPropertyValue('--unsettled').trim(),
+    bg: s.getPropertyValue('--panel').trim(),
+  };
+}
+
+/** Draw whichever pass is selected, plus its numbers. */
+function showSelectedPass() {
+  const pass = state.passList[state.selectedPass];
+  const sat = pass && state.sats.find((s) => s.catalog === pass.catalog);
+  const here = toLatLon(state.settings.grid);
+  const track = pass && sat && here
+    ? passTrack(sat, observerAt(here.lat, here.lon), pass)
+    : [];
+  render.renderPassFacts(pass || null);
+  render.renderSkyPlot(track, pass, skyColours());
+}
+
+function pickPass(index) {
+  state.selectedPass = index;
+  render.renderPassList(state.passList, index, new Date(), pickPass);
+  showSelectedPass();
+}
+
+/**
+ * Build the pass page.
+ *
+ * Recomputed on every visit rather than cached. The full search is a few tens
+ * of milliseconds and the page is opened deliberately, so the simpler thing is
+ * also the correct one -- a cached list would quietly age past the passes in it.
+ */
+function buildPassPage() {
+  const now = new Date();
+  const here = toLatLon(state.settings.grid);
+  document.getElementById('pass-grid').textContent = state.settings.grid || '--';
+  state.passList = here && state.sats.length
+    ? allPasses(state.sats, observerAt(here.lat, here.lon), now, { limit: 20 })
+    : [];
+  state.selectedPass = 0;
+  document.getElementById('pass-note').textContent = state.sats.length
+    ? `${state.sats.length} satellites on the roster, elements ${render.age(state.tleAt, now) || 'current'}.`
+    : 'No element sets loaded, so no passes can be predicted.';
+  render.renderPassList(state.passList, 0, now, pickPass);
+  showSelectedPass();
+}
+
 // ---------- ticks -----------------------------------------------------------
 
 function tickClock() {
@@ -645,19 +703,29 @@ async function tickSpaceWeather() {
 
 function route() {
   const hash = location.hash;
+  const wantPasses = hash.startsWith('#/satellites');
   // About wins over the first-run redirect to settings: someone who lands here
   // unconfigured should still be able to read what this is and find the
   // projects that do more, without being made to enter a grid square first.
   const wantAbout = hash.startsWith('#/about');
   const wantSettings =
-    !wantAbout && (hash.startsWith('#/settings') || !settings.isConfigured(state.settings));
+    !wantAbout && !wantPasses
+    && (hash.startsWith('#/settings') || !settings.isConfigured(state.settings));
 
   document.getElementById('about').hidden = !wantAbout;
+  document.getElementById('satellites').hidden = !wantPasses;
   document.getElementById('settings').hidden = !wantSettings;
-  document.getElementById('dashboard').hidden = wantAbout || wantSettings;
+  document.getElementById('dashboard').hidden = wantAbout || wantSettings || wantPasses;
 
   // Nothing on the About page is live, so there is nothing to render or tick.
   if (wantAbout) return;
+
+  // The pass page is a snapshot: built on arrival, not ticked. Twenty-four
+  // hours of orbits do not change in the minute someone spends reading them.
+  if (wantPasses) {
+    buildPassPage();
+    return;
+  }
 
   if (wantSettings) {
     render.fillSettings(state.settings);
@@ -726,6 +794,8 @@ async function start() {
       rebuildBasemap();
       drawMap(new Date());
     }
+    // The plot is sized from its own box, which a rotation changes.
+    if (!document.getElementById('satellites').hidden) showSelectedPass();
   });
 
   route();

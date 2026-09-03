@@ -130,17 +130,30 @@ export function observerAt(lat, lon, heightM = 0) {
 }
 
 /**
- * Elevation of one satellite above the observer's horizon, in degrees.
+ * Where to point: azimuth and elevation in degrees, plus range in km.
  *
- * Returns null when the propagator fails, which is what a decayed or otherwise
- * unusable element set looks like from here -- satellite-js hands back `false`
- * for the position rather than raising.
+ * Azimuth is what makes this worth having over elevation alone -- "peak 47
+ * degrees" says whether to bother and azimuth says which way to turn. Returns
+ * null when the propagator fails, which is what a decayed or otherwise unusable
+ * element set looks like from here: satellite-js hands back `false` for the
+ * position rather than raising.
  */
-export function elevationAt(satrec, observer, date) {
+export function lookAt(satrec, observer, date) {
   const pv = satellite.propagate(satrec, date);
   if (!pv || !pv.position) return null;
   const ecf = satellite.eciToEcf(pv.position, satellite.gstime(date));
-  return satellite.ecfToLookAngles(observer, ecf).elevation * R2D;
+  const look = satellite.ecfToLookAngles(observer, ecf);
+  return {
+    az: (look.azimuth * R2D + 360) % 360,
+    el: look.elevation * R2D,
+    rangeKm: look.rangeSat,
+  };
+}
+
+/** Elevation alone, for the horizon search. */
+export function elevationAt(satrec, observer, date) {
+  const look = lookAt(satrec, observer, date);
+  return look ? look.el : null;
 }
 
 /**
@@ -170,67 +183,120 @@ function refineCrossing(satrec, observer, before, after) {
 }
 
 /**
- * The next pass of one satellite, walking forward from `from`.
+ * Every pass of one satellite in the window, in time order.
  *
- * A pass already in progress counts and is returned with `inProgress` set: on a
+ * A pass already under way counts and comes back with `inProgress` set: on a
  * wall display "up now, six minutes left" is worth more than the one after it.
  *
- * The peak is found on the coarse grid and then refined either side, which is
- * accurate to a fraction of a degree -- good enough for a number that exists to
- * tell you whether to bother, and much cheaper than a fine sweep.
+ * Azimuths are recorded at the three moments an operator actually uses -- where
+ * it comes up, where it is highest, and where it goes down. Those three
+ * bearings are the pass, as far as pointing an antenna goes.
+ *
+ * The peak is located on the coarse grid and reported from there. That is
+ * accurate to a fraction of a degree for a minute step, which
+ * spec/check_satellites.mjs proves rather than assumes by sweeping a whole pass
+ * at one second and comparing.
  */
-export function nextPassFor(sat, observer, from, {
-  windowHours = WINDOW_HOURS, stepSec = STEP_SEC, minPeak = MIN_PEAK_DEG,
+export function passesFor(sat, observer, from, {
+  windowHours = WINDOW_HOURS, stepSec = STEP_SEC, minPeak = MIN_PEAK_DEG, limit = Infinity,
 } = {}) {
   const start = from.getTime();
   const end = start + windowHours * 3600 * 1000;
   const step = stepSec * 1000;
+  const out = [];
 
   let prevT = start;
-  let prevEl = elevationAt(sat.satrec, observer, from);
-  if (prevEl === null) return null;
+  let prevLook = lookAt(sat.satrec, observer, from);
+  if (!prevLook) return out;
 
-  let aos = prevEl >= 0 ? start : null;   // already up when we started looking
+  let aos = prevLook.el >= 0 ? start : null;
+  let aosAz = prevLook.el >= 0 ? prevLook.az : null;
   let inProgress = aos !== null;
-  let peak = prevEl >= 0 ? prevEl : -90;
+  let peak = prevLook.el >= 0 ? prevLook.el : -90;
+  let peakAz = prevLook.az;
   let peakT = start;
 
-  for (let t = start + step; t <= end; t += step) {
-    const el = elevationAt(sat.satrec, observer, new Date(t));
-    if (el === null) return null;
+  for (let t = start + step; t <= end && out.length < limit; t += step) {
+    const look = lookAt(sat.satrec, observer, new Date(t));
+    if (!look) break;
 
-    if (aos === null && prevEl < 0 && el >= 0) {
+    if (aos === null && prevLook.el < 0 && look.el >= 0) {
       aos = refineCrossing(sat.satrec, observer, prevT, t);
-      peak = el;
+      const at = lookAt(sat.satrec, observer, new Date(aos));
+      aosAz = at ? at.az : look.az;
+      peak = look.el;
+      peakAz = look.az;
       peakT = t;
     } else if (aos !== null) {
-      if (el > peak) { peak = el; peakT = t; }
-      if (prevEl >= 0 && el < 0) {
+      if (look.el > peak) { peak = look.el; peakAz = look.az; peakT = t; }
+      if (prevLook.el >= 0 && look.el < 0) {
         const los = refineCrossing(sat.satrec, observer, prevT, t);
-        // Too low to be worth reporting: drop this one and keep walking, so a
-        // string of grazing passes cannot hide a good one behind them.
-        if (peak < minPeak) {
-          aos = null;
-          peak = -90;
-          // Whatever comes next is a fresh pass, not the one we walked in on.
-          inProgress = false;
-        } else {
-          return {
+        if (peak >= minPeak) {
+          const lost = lookAt(sat.satrec, observer, new Date(los));
+          out.push({
             catalog: sat.catalog,
             label: sat.label,
             aos: new Date(aos),
+            aosAz,
             los: new Date(los),
+            losAz: lost ? lost.az : look.az,
             peak,
+            peakAz,
             peakAt: new Date(peakT),
             inProgress,
-          };
+          });
         }
+        // Whatever comes next is a fresh pass, whether this one was reported or
+        // dropped for being too low to walk to the radio for.
+        aos = null;
+        aosAz = null;
+        peak = -90;
+        inProgress = false;
       }
     }
     prevT = t;
-    prevEl = el;
+    prevLook = look;
   }
-  return null;
+  return out;
+}
+
+/** The next pass of one satellite, or null. */
+export function nextPassFor(sat, observer, from, options = {}) {
+  const [first] = passesFor(sat, observer, from, { ...options, limit: 1 });
+  return first || null;
+}
+
+/**
+ * Every pass across the roster, soonest first.
+ *
+ * `limit` caps the returned list, not the search: the window is walked in full
+ * for each satellite and the merge is sorted, because the soonest pass of the
+ * ninth bird can easily precede the second pass of the first.
+ */
+export function allPasses(sats, observer, from, { limit = 20, ...options } = {}) {
+  const out = [];
+  for (const sat of sats) out.push(...passesFor(sat, observer, from, options));
+  out.sort((a, b) => a.aos - b.aos);
+  return out.slice(0, limit);
+}
+
+/**
+ * The arc a pass traces across the sky, for the polar plot.
+ *
+ * Sampled evenly between acquisition and loss rather than on a fixed cadence,
+ * so a four-minute skim and a seventy-minute MEO pass both come back as a
+ * smooth curve of the same vertex count.
+ */
+export function passTrack(sat, observer, pass, samples = 90) {
+  const start = pass.aos.getTime();
+  const span = pass.los.getTime() - start;
+  const out = [];
+  for (let i = 0; i <= samples; i++) {
+    const at = new Date(start + (span * i) / samples);
+    const look = lookAt(sat.satrec, observer, at);
+    if (look) out.push({ at, az: look.az, el: look.el });
+  }
+  return out;
 }
 
 /** The soonest pass across the roster, or null if the sky is empty for a day. */

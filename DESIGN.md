@@ -28,13 +28,13 @@ has run offline since 2026-09-02, and the next satellite pass since 2026-09-03.
 is reusable and most of its decisions survive intact, but its name and platform
 choice do not. Where the two disagree, this file wins.
 
-**Checks.** Ten spec files run under the JavaScriptCore shell that ships with
+**Checks.** Eleven spec files run under the JavaScriptCore shell that ships with
 macOS, since there is no `node` here. Run them from the repository root —
 `check_sw.mjs` reads files relative to the working directory:
 
 ```sh
 JSC=/System/Library/Frameworks/JavaScriptCore.framework/Versions/A/Helpers/jsc
-for s in grid sun terminator map render globe graticule symbols satellites sw; do
+for s in grid sun terminator map render globe graticule symbols satellites skyplot sw; do
   $JSC -m spec/check_$s.mjs || break
 done
 python3 -m http.server 8080     # then open http://127.0.0.1:8080
@@ -663,14 +663,57 @@ bother: twelve degrees is a scratchy two minutes and seventy is easy. Passes
 peaking under **10°** are not reported at all; below that the line would say
 something almost every hour and mean nothing.
 
-Rejected: **a pass list.** More useful for planning and it is a table, and the
-strip has three panes that are not tables.
-
 Rejected: **anything on the map.** A footprint circle was the tempting one — it
 would have reused the marker and night-region machinery already there, and it
 looks good. But DESIGN.md has killed a layer for ink once already, and a
 footprint answers "who else can hear it", which is a question for a contest, not
 a glance.
+
+**Reopened 2026-09-03: the line alone is not enough to point an antenna.** "In
+46 min, peak 47°" says whether to bother and not which way to turn, and azimuth
+is the half an operator actually needs. The countdown stays exactly as it is;
+what was added is a page behind it. See "The pass list is a drill-down".
+
+## The pass list is a drill-down, and that is not a new thesis · 2026-09-03
+
+Tapping the pass line opens `#/satellites`: the next twenty-four hours above
+10°, and a **polar sky plot** of whichever pass is selected — north up, horizon
+at the rim, zenith at the centre, with rise, peak and set marked and their
+bearings given as both degrees and compass points.
+
+This looks like a departure from "Gear in a corner. Nothing else." It is not.
+`#/settings` and `#/about` have been hash-routed pages behind a tap since the
+first slice; this is a third. The wall display is unchanged — the dashboard
+still shows one line, and the page is only reached deliberately. What would have
+broken the thesis is putting a pass table *in the strip*, which is why the list
+is not there.
+
+A **polar plot rather than a ground track**, which was the other candidate and
+the one originally asked for. The plot maps onto the physical act: read a
+bearing off the rim, read how high off the rings, and the shape says at a glance
+whether this is a low northern skim or worth setting up for. A ground track
+shows where the satellite flies and leaves the operator to infer where to point,
+which is the wrong way round for the one job the page exists to do.
+
+Bearings are given as **degrees and a 16-point compass name**, because both get
+used: a rotator takes the number and a person holding an Arrow takes "WSW".
+They are **true, not magnetic**, and the page says so — around FM17 the
+declination is some 11° west, which is more than half a compass point and
+exactly the sort of unstated assumption that has someone pointing at the wrong
+patch of sky.
+
+The list is **recomputed on every visit** rather than cached. The full search is
+a few tens of milliseconds and the page is opened deliberately, so the simpler
+thing is also the correct one: a cached list would quietly age past the passes
+in it. Nothing on the page ticks — twenty-four hours of orbits do not change in
+the minute someone spends reading them.
+
+Rejected: **a second route for the detail.** List and plot share one page, so
+picking a pass is a redraw and not a navigation. On a wall-mounted iPad being
+prodded from a metre away, fewer states is worth more than deep-linking to a
+pass that will have happened by the time anyone follows the link.
+
+
 
 ## SGP4 is vendored, and pinned to an old major · 2026-09-03
 
@@ -886,6 +929,10 @@ Roughly in the order they should be taken.
 
 - **No README, and the repository is public.** Anyone who finds it gets no
   explanation of what it is or how to run the checks.
+- **A ground track or footprint on the map.** Turned down twice on ink, and the
+  polar plot has since answered the pointing question that was the real reason
+  to want it. Reopen only if something needs *where it is* rather than *where to
+  point*.
 - **Choosing satellites in settings.** The roster is nine birds in a source
   file. Making it editable is PLAN.md's "all 96 loaded, a curated default",
   which was right eventually and is a settings UI; wait until the line has

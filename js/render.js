@@ -6,6 +6,7 @@
 // arithmetic on times -- under test.
 
 import { kpBand, xrayBand } from './spacewx.js';
+import * as skyplot from './skyplot.js';
 
 const $ = (id) => document.getElementById(id);
 
@@ -115,6 +116,26 @@ function staleNote(elementsAt, now) {
   const days = (now - elementsAt) / 86400000;
   if (days < TLE_STALE_DAYS) return '';
   return ` \u00b7 elements ${duration(now - elementsAt)} old`;
+}
+
+// Sixteen points, which is as fine as a bearing spoken aloud ever gets. A
+// rotator takes the number; a person turning a handheld Arrow takes "SSW".
+const POINTS = [
+  'N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE',
+  'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW',
+];
+
+/** A bearing in degrees as a compass point. */
+export function compass(deg) {
+  if (typeof deg !== 'number' || Number.isNaN(deg)) return '';
+  const norm = ((deg % 360) + 360) % 360;
+  return POINTS[Math.round(norm / 22.5) % 16];
+}
+
+/** "241\u00b0 SW" -- the number to dial and the word to say. */
+export function bearing(deg) {
+  if (typeof deg !== 'number' || Number.isNaN(deg)) return '--';
+  return `${Math.round(((deg % 360) + 360) % 360)}\u00b0 ${compass(deg)}`;
 }
 
 export function kpTrendText(value, previous) {
@@ -243,4 +264,117 @@ export function showGridError(message) {
       'Four characters work. Six is better &mdash; a four-character square is ' +
       'about 176&nbsp;km across, which spreads sunrise over some eleven minutes.';
   }
+}
+
+// ---------- passes ----------------------------------------------------------
+
+/**
+ * The pass list.
+ *
+ * Buttons rather than list items with click handlers, so the keyboard and
+ * VoiceOver get this for free -- it is the one genuinely interactive surface in
+ * the whole app and the cheapest place to not be careless.
+ */
+export function renderPassList(passes, selected, now = new Date(), onPick) {
+  const list = $('pass-list');
+  list.innerHTML = '';
+  if (!passes.length) {
+    const li = document.createElement('li');
+    li.className = 'hint';
+    li.textContent = 'No passes above 10\u00b0 in the next 24 hours.';
+    list.append(li);
+    return;
+  }
+  passes.forEach((pass, i) => {
+    const li = document.createElement('li');
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.setAttribute('aria-current', String(i === selected));
+    if (pass.inProgress || (pass.aos <= now && now <= pass.los)) button.classList.add('now');
+
+    const when = document.createElement('span');
+    when.className = 'when';
+    when.textContent = pass.inProgress ? 'now' : hhmm(pass.aos);
+
+    const who = document.createElement('span');
+    who.className = 'who';
+    who.textContent = pass.label;
+
+    const how = document.createElement('span');
+    how.className = 'how';
+    how.textContent = `${Math.round(pass.peak)}\u00b0 ${compass(pass.peakAz)}`;
+
+    button.append(when, who, how);
+    button.addEventListener('click', () => onPick(i));
+    li.append(button);
+    list.append(li);
+  });
+}
+
+/** The facts under the plot: the three bearings, and how long it lasts. */
+export function renderPassFacts(pass) {
+  const title = $('pass-title');
+  const facts = $('pass-facts');
+  facts.innerHTML = '';
+  if (!pass) {
+    title.textContent = 'No pass selected';
+    return;
+  }
+  title.textContent = `${pass.label} \u00b7 ${hhmm(pass.aos)}\u2013${hhmm(pass.los)}`;
+  const rows = [
+    ['Rise', `${hhmm(pass.aos)} \u00b7 ${bearing(pass.aosAz)}`],
+    ['Peak', `${hhmm(pass.peakAt)} \u00b7 ${Math.round(pass.peak)}\u00b0 at ${bearing(pass.peakAz)}`],
+    ['Set', `${hhmm(pass.los)} \u00b7 ${bearing(pass.losAz)}`],
+    ['Lasts', duration(pass.los - pass.aos)],
+  ];
+  for (const [term, value] of rows) {
+    const dt = document.createElement('dt');
+    dt.textContent = term;
+    const dd = document.createElement('dd');
+    dd.textContent = value;
+    facts.append(dt, dd);
+  }
+}
+
+/**
+ * Draw one pass on the polar plot.
+ *
+ * Sized here rather than in CSS because a canvas needs its backing store set in
+ * device pixels; the element's own width comes from the stylesheet and this
+ * follows it.
+ */
+export function renderSkyPlot(track, pass, colours) {
+  const canvas = $('skyplot');
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  const cssW = canvas.clientWidth || 320;
+  // Square, and with room outside the rim for the cardinal letters.
+  canvas.style.height = `${cssW}px`;
+  canvas.width = Math.round(cssW * dpr);
+  canvas.height = Math.round(cssW * dpr);
+
+  const ctx = canvas.getContext('2d');
+  const size = canvas.width;
+  const cx = size / 2;
+  const cy = size / 2;
+  const fontPx = Math.max(12, Math.round(size / 24));
+  const r = size / 2 - fontPx * 1.9;
+
+  ctx.clearRect(0, 0, size, size);
+  skyplot.drawFrame(ctx, cx, cy, r, { ring: colours.ring, label: colours.label, fontPx });
+  if (!track || !track.length) return;
+
+  skyplot.drawTrack(ctx, cx, cy, r, track, {
+    stroke: colours.track,
+    lineWidth: Math.max(2, Math.round(size / 150)),
+  });
+  const dot = Math.max(3.5, size / 90);
+  skyplot.drawPoint(ctx, cx, cy, r, pass.aosAz, 0, {
+    fill: colours.ends, halo: colours.bg, radius: dot,
+  });
+  skyplot.drawPoint(ctx, cx, cy, r, pass.losAz, 0, {
+    fill: colours.ends, halo: colours.bg, radius: dot,
+  });
+  skyplot.drawPoint(ctx, cx, cy, r, pass.peakAz, pass.peak, {
+    fill: colours.peak, halo: colours.bg, radius: dot * 1.35,
+  });
 }

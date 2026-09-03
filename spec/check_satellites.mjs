@@ -12,7 +12,8 @@
 // one that works, which is why this exists at all.
 
 import {
-  parseTle, epochOf, makeRecords, observerAt, elevationAt, nextPassFor, ROSTER,
+  parseTle, epochOf, makeRecords, observerAt, elevationAt, lookAt,
+  nextPassFor, passesFor, allPasses, passTrack, ROSTER,
 } from '../js/satellites.js';
 import satellite from '../vendor/satellite.js';
 
@@ -166,6 +167,83 @@ if (pass) {
 // A zero-length window cannot contain a pass, and the honest answer is null
 // rather than a pass with nonsense in it.
 check('no window, no pass', nextPassFor(iss, here, from, { windowHours: 0 }), null);
+
+// --- azimuth ----------------------------------------------------------------
+// The half that makes this worth having. An azimuth running the wrong way round
+// the compass points an antenna at the wrong quarter of the sky while every
+// elevation stays perfectly correct, so it gets checked on its own.
+
+check('azimuth is always a compass bearing', (() => {
+  for (let h = 0; h < 24; h++) {
+    const look = lookAt(iss.satrec, here, new Date(from.getTime() + h * 3600000));
+    if (!look) return false;
+    if (!(look.az >= 0 && look.az < 360)) return false;
+  }
+  return true;
+})(), true);
+
+// Due north of the observer must read as north, and due south as south. Built
+// by putting the observer on the satellite's own meridian, north and south of
+// its subpoint, where the answer follows from the geometry alone.
+const look = lookAt(iss.satrec, observerAt(subLat, subLon), when);
+check('range at the subpoint is the orbital height', look.rangeKm, gd.height, 2);
+
+const southOf = lookAt(iss.satrec, observerAt(subLat - 8, subLon), when);
+check('a satellite to the north reads as north',
+  southOf.az < 15 || southOf.az > 345, true);
+if (!(southOf.az < 15 || southOf.az > 345)) print(`     azimuth was ${southOf.az.toFixed(1)}`);
+
+const northOf = lookAt(iss.satrec, observerAt(subLat + 8, subLon), when);
+check('a satellite to the south reads as south', Math.abs(northOf.az - 180) < 15, true);
+if (!(Math.abs(northOf.az - 180) < 15)) print(`     azimuth was ${northOf.az.toFixed(1)}`);
+
+const eastOf = lookAt(iss.satrec, observerAt(subLat, subLon - 8), when);
+check('a satellite to the east reads as east', Math.abs(eastOf.az - 90) < 20, true);
+if (!(Math.abs(eastOf.az - 90) < 20)) print(`     azimuth was ${eastOf.az.toFixed(1)}`);
+
+if (pass) {
+  check('rise, peak and set all have bearings',
+    [pass.aosAz, pass.peakAz, pass.losAz].every((a) => a >= 0 && a < 360), true);
+  // A pass crosses the sky, so it cannot rise and set on the same bearing.
+  const spread = Math.abs(((pass.aosAz - pass.losAz + 540) % 360) - 180);
+  check('it does not set where it rose', spread < 178, true);
+  // The recorded rise bearing is the bearing at the recorded rise time.
+  const atAos = lookAt(iss.satrec, here, pass.aos);
+  check('the rise bearing matches the rise moment', atAos.az, pass.aosAz, 0.5);
+}
+
+// --- the list ---------------------------------------------------------------
+const many = passesFor(iss, here, from, { windowHours: 24, minPeak: 10 });
+check('a day gives more than one ISS pass', many.length > 1, true);
+check('the first of the list is the next pass',
+  many[0].aos.getTime(), pass.aos.getTime());
+check('passes do not overlap', many.every((p, i) => i === 0 || p.aos > many[i - 1].los), true);
+check('every pass clears the threshold', many.every((p) => p.peak >= 10), true);
+check('only the first can be in progress',
+  many.slice(1).every((p) => !p.inProgress), true);
+
+// A lower threshold can only ever find more.
+const lower = passesFor(iss, here, from, { windowHours: 24, minPeak: 0 });
+check('dropping the threshold does not lose passes', lower.length >= many.length, true);
+
+const merged = allPasses([iss], here, from, { windowHours: 24, minPeak: 10, limit: 3 });
+check('the merged list honours its limit', merged.length, 3);
+check('and comes back in time order',
+  merged.every((p, i) => i === 0 || p.aos >= merged[i - 1].aos), true);
+
+// --- the track --------------------------------------------------------------
+if (pass) {
+  const track = passTrack(iss, here, pass, 60);
+  check('the track is sampled end to end', track.length, 61);
+  check('it starts at the horizon', track[0].el, 0, 0.3);
+  check('it ends at the horizon', track[track.length - 1].el, 0, 0.3);
+  check('it stays above the horizon in between',
+    track.slice(1, -1).every((s) => s.el > -0.01), true);
+  check('it is in time order',
+    track.every((s, i) => i === 0 || s.at >= track[i - 1].at), true);
+  const high = track.reduce((m, s) => Math.max(m, s.el), -90);
+  check('and reaches the reported peak', high, pass.peak, 1.0);
+}
 
 if (failures) {
   print(`\n${failures} check(s) failed.`);

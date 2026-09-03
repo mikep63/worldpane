@@ -8,7 +8,8 @@
 // same file are verified by looking at the page.
 
 import {
-  hhmm, ss, duration, age, greyLineText, nextPassText, kpTrendText, trim,
+  hhmm, ss, duration, age, greyLineText, nextPassText, compass, bearing,
+  kpTrendText, trim,
 } from '../js/render.js';
 
 let failures = 0;
@@ -126,6 +127,28 @@ check('a pass under way still admits stale elements',
 
 // Peak elevation is rounded, not truncated, and always carries its degree sign.
 check('the peak rounds', nextPassText(pass({ peak: 12.6 }), t0).text.includes('peak 13\u00b0'), true);
+
+// --- bearings ---------------------------------------------------------------
+// The four cardinals, then the boundaries between points, which is where a
+// rounding error hides. 11.25 degrees is exactly half a point.
+check('due north', compass(0), 'N');
+check('due east', compass(90), 'E');
+check('due south', compass(180), 'S');
+check('due west', compass(270), 'W');
+check('north-north-east', compass(22.5), 'NNE');
+check('just under half a point is still north', compass(11.24), 'N');
+check('just over rounds up', compass(11.26), 'NNE');
+check('the far side of the compass wraps to north', compass(354), 'N');
+check('and 360 is north, not undefined', compass(360), 'N');
+check('negative bearings wrap', compass(-90), 'W');
+check('past a full turn wraps', compass(450), 'E');
+
+// 241 is WSW, not SW: the points are 22.5 apart and SW is 225, WSW is 247.5.
+// Worth pinning a bearing that sits near a boundary rather than on one.
+check('a bearing carries number and word', bearing(241), '241\u00b0 WSW');
+check('bearings round to whole degrees', bearing(241.6), '242\u00b0 WSW');
+check('a bearing on the point itself', bearing(225), '225\u00b0 SW');
+check('a missing bearing does not print NaN', bearing(undefined), '--');
 
 if (failures) {
   print(`\n${failures} check(s) failed.`);
