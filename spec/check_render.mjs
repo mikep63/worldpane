@@ -8,7 +8,7 @@
 // same file are verified by looking at the page.
 
 import {
-  hhmm, ss, duration, age, greyLineText, nextPassText, compass, bearing,
+  hhmm, ss, duration, age, greyLineText, nextPassText, compass, bearing, mhz,
   kpTrendText, trim,
 } from '../js/render.js';
 
@@ -149,6 +149,18 @@ check('a bearing carries number and word', bearing(241), '241\u00b0 WSW');
 check('bearings round to whole degrees', bearing(241.6), '242\u00b0 WSW');
 check('a bearing on the point itself', bearing(225), '225\u00b0 SW');
 check('a missing bearing does not print NaN', bearing(undefined), '--');
+
+// --- frequencies ------------------------------------------------------------
+// Real values from the roster. The last one is the reason this is not simply
+// toFixed(3): AO-7's beacon carries a meaningful fourth decimal, and on a CW
+// beacon 2.5 kHz is the difference between hearing it and not.
+check('a whole number of kilohertz', mhz(436795000), '436.795');
+check('SO-50 uplink', mhz(145850000), '145.850');
+check('AO-7 beacon keeps its fourth decimal', mhz(145977500), '145.9775');
+check('ten gigahertz does not lose its scale', mhz(10460000000), '10460.000');
+check('HF is fine too', mhz(29400000), '29.400');
+check('nothing is empty, not NaN', mhz(null), '');
+check('and so is a missing frequency', mhz(undefined), '');
 
 if (failures) {
   print(`\n${failures} check(s) failed.`);

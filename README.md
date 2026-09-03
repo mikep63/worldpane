@@ -26,7 +26,8 @@ that browser.
 - **Sunrise, sunset and the grey-line countdown** for your grid.
 - **The next satellite pass** above 10°, with peak elevation. Tap it for the
   next 24 hours of passes and a polar sky plot of any one of them, with rise,
-  peak and set bearings in degrees and compass points.
+  peak and set bearings in degrees and compass points, and the satellite's
+  published frequencies and modes.
 - **Space weather** — 10.7 cm solar flux, planetary K with its 24-hour trend,
   and the current GOES X-ray class, all from NOAA SWPC.
 
@@ -113,9 +114,9 @@ js/                 ES modules, no bundler
   render.js         state to DOM, with the pure formatters at the top
   main.js           routing, timers and the draw loop
 spec/               one check file per module
-tools/              Natural Earth build steps (Python, run rarely)
+tools/              build steps (Python, run rarely): Natural Earth, SatNOGS
 vendor/             astronomy-engine and satellite-js
-data/               quantised coastline, borders and lakes
+data/               quantised coastline, borders, lakes; satellite frequencies
 ```
 
 `DESIGN.md` is the important file. It records settled decisions **and the
@@ -133,6 +134,8 @@ text. Read it before changing anything that looks arbitrary; it probably is not.
   boundaries and lakes
 - [NOAA SWPC](https://www.swpc.noaa.gov/) — space weather, read live
 - [CelesTrak](https://celestrak.org/) — amateur satellite elements, read live
+- [SatNOGS DB](https://db.satnogs.org/) by the Libre Space Foundation —
+  frequencies and modes, CC BY-SA 4.0, bundled as `data/transmitters.json`
 
 ## If you want more than this
 
@@ -156,7 +159,9 @@ carry it on, and they are all good:
 ## Licence
 
 MIT for everything written here. The bundled libraries and map data carry their
-own terms, all of them permissive — see `LICENSE`, which lists each one and what
-was done to it.
+own terms — see `LICENSE`, which lists each one and what was done to it. One
+exception worth knowing about: `data/transmitters.json` comes from SatNOGS DB
+and is **CC BY-SA 4.0**, not MIT. Share-alike attaches to that file and its
+derivatives, not to the code that reads it.
 
 73, KB4S

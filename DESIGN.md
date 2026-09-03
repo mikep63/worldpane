@@ -777,6 +777,54 @@ fail; AMSAT's status page is the authority on what is alive, and this file is on
 operator's shortlist meant to be edited. The parser reads all 96 regardless, so
 widening it later is an edit to an array.
 
+## Frequencies are bundled, not fetched · 2026-09-03
+
+The pass page lists each satellite's transmitters — uplink, downlink, mode, and
+whether a linear transponder inverts. Pointing an antenna and tuning a radio are
+the two halves of working a satellite, and the page had only the first.
+
+The data is **SatNOGS DB**, and it arrives as a committed file rather than a
+fetch, for a reason that is the exact mirror of CelesTrak's: **SatNOGS sends no
+CORS header.** Not on a GET and not on a preflight, checked with an `Origin` the
+way a browser asks. CelesTrak does and SatNOGS does not, so this is the first
+source the client genuinely cannot read for itself. Frequencies change on the
+order of years, so `tools/build_transmitters.py` sits beside the Natural Earth
+builders — run rarely, output committed. It reads `ROSTER` out of
+`js/satellites.js` rather than repeating it, so the two cannot drift.
+
+Notably this does **not** reopen the scheduled Action. A build step run by hand
+every year or two is not a server.
+
+**Filtering is the whole difficulty.** SatNOGS marks a great deal active: the
+ISS lists fifty transmitters and reports forty-one active, being every payload
+flown since 1998, and a page with forty-one lines on it is a database dump
+rather than a reference. Entries carrying an **uplink sort first** — what you
+can work, before what you can only hear — and each satellite is capped at five.
+That yields thirty-one transmitters across nine satellites in under four
+kilobytes.
+
+Two known gaps, upstream and not ours: **XW-3's linear transponder and IO-117's
+digipeater are not flagged active in SatNOGS**, so both show only telemetry. The
+roster's most-worked digital bird is the one with the least useful entry. Fixing
+it means editing SatNOGS, which is the right place to fix it.
+
+## The first bundled thing with an obligation · 2026-09-03
+
+SatNOGS DB is **CC BY-SA 4.0**. Everything else bundled here is either public
+domain (Natural Earth, which asks nothing and is credited anyway) or MIT (the
+two vendored libraries). This is the first that imposes conditions.
+
+`data/transmitters.json` is therefore **licensed separately from the code**, and
+`LICENSE` says so at length. Share-alike attaches to the data and its
+adaptations, not to the software that reads it — `js/satellites.js` and
+`js/render.js` stay MIT. That the licence file was already split into "the
+software" and "bundled third-party material" made this a paragraph rather than
+a problem, which is the argument for having structured it that way before
+anything needed it.
+
+Attribution is on the About page and in the file's own `source` and `license`
+fields, so a copy that escapes the repository still says where it came from.
+
 ## The About page credits by choice, not obligation · 2026-08-29
 
 Worldpane contains no HamClock code, data or assets, so nothing is owed to it.

@@ -138,6 +138,21 @@ export function bearing(deg) {
   return `${Math.round(((deg % 360) + 360) % 360)}\u00b0 ${compass(deg)}`;
 }
 
+/**
+ * Hertz as megahertz, the way a frequency is written down.
+ *
+ * Up to four decimals, never fewer than three. Three is kilohertz resolution
+ * and covers nearly everything; AO-7's beacon sits at 145.9775 and would lose
+ * its last digit, which on a CW beacon is the difference between hearing it and
+ * not. Trailing zeros past the third are dropped so the common case stays
+ * short.
+ */
+export function mhz(hz) {
+  if (typeof hz !== 'number' || !Number.isFinite(hz)) return '';
+  const four = (hz / 1e6).toFixed(4);
+  return four.endsWith('0') ? four.slice(0, -1) : four;
+}
+
 export function kpTrendText(value, previous) {
   if (typeof value !== 'number' || typeof previous !== 'number') return 'Kp';
   const delta = value - previous;
@@ -380,4 +395,49 @@ export function renderSkyPlot(track, pass, colours) {
   skyplot.drawPoint(ctx, cx, cy, r, pass.peakAz, pass.peak, {
     fill: colours.peak, halo: colours.bg, radius: dot * 1.35,
   });
+}
+
+/**
+ * The transmitters for the selected satellite.
+ *
+ * Two lines each: what it is, then where it is. The description carries the
+ * things that decide whether a contact happens at all -- the CTCSS tone on
+ * SO-50, which band pair it is -- so it leads, and the frequencies sit under it
+ * where a tabular column can align them.
+ */
+export function renderTransmitters(list) {
+  const box = $('tx-list');
+  box.innerHTML = '';
+  if (!list || !list.length) {
+    const li = document.createElement('li');
+    li.className = 'hint';
+    li.textContent = 'No published transmitters for this satellite.';
+    box.append(li);
+    return;
+  }
+  for (const tx of list) {
+    const li = document.createElement('li');
+
+    const what = document.createElement('p');
+    what.className = 'tx-what';
+    what.textContent = tx.description || tx.mode || 'Transmitter';
+    if (tx.invert) {
+      const tag = document.createElement('span');
+      tag.className = 'tx-tag';
+      // Which way a linear transponder runs. Tuning the wrong way sends you up
+      // the band while the station you are working goes down it.
+      tag.textContent = 'inverting';
+      what.append(' ', tag);
+    }
+
+    const where = document.createElement('p');
+    where.className = 'tx-where num';
+    const parts = [];
+    if (tx.uplink) parts.push(`\u2191 ${mhz(tx.uplink)}`);
+    if (tx.downlink) parts.push(`\u2193 ${mhz(tx.downlink)}`);
+    where.textContent = `${parts.join('   ')}  MHz`;
+
+    li.append(what, where);
+    box.append(li);
+  }
 }

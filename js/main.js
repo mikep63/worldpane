@@ -103,6 +103,9 @@ const state = {
   // is looking at.
   passList: [],
   selectedPass: 0,
+  // Frequencies and modes, bundled rather than fetched: SatNOGS DB sends no
+  // CORS header. See DESIGN.md, "Frequencies are bundled, not fetched".
+  transmitters: null,
   basemapKey: '',    // palette and switches the basemap was painted under
   size: { w: 0, h: 0 },
   dpr: 1,
@@ -617,6 +620,8 @@ function showSelectedPass() {
     : [];
   render.renderPassFacts(pass || null);
   render.renderSkyPlot(track, pass, skyColours());
+  const byCatalog = state.transmitters && state.transmitters.satellites;
+  render.renderTransmitters(pass && byCatalog ? byCatalog[String(pass.catalog)] : null);
 }
 
 function pickPass(index) {
@@ -823,6 +828,9 @@ async function start() {
   await Promise.all([
     loadOverlay('borders', 'data/borders.json'),
     loadOverlay('lakes', 'data/lakes.json'),
+    // Not a map layer, but the same bargain: a file that costs one line if it
+    // fails to arrive rather than a page.
+    loadOverlay('transmitters', 'data/transmitters.json'),
   ]);
   // The world is already on screen without them, so fold them in rather than
   // waiting up to a minute for the next tick to notice.

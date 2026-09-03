@@ -18,7 +18,7 @@
 // Bumped by spec/check_sw.mjs, which digests the files below and fails when
 // this does not match. Nothing to remember: run the checks and paste what it
 // prints. See DESIGN.md, "Offline is a precached generation".
-const BUILD = '06d27ebd';
+const BUILD = 'a4f05bbe';
 const CACHE = `worldpane-${BUILD}`;
 
 // Everything the app needs to start with no network. The check verifies each
@@ -45,7 +45,8 @@ const ASSETS = [
   "vendor/satellite.js",
   "data/coastline.json",
   "data/borders.json",
-  "data/lakes.json"
+  "data/lakes.json",
+  "data/transmitters.json"
 ];
 
 // What a navigation to any URL in scope resolves to. The app is hash-routed, so
