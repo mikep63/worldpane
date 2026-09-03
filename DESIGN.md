@@ -28,13 +28,13 @@ Satellites and the scheduled Action are still deferred. The About page shipped
 is reusable and most of its decisions survive intact, but its name and platform
 choice do not. Where the two disagree, this file wins.
 
-**Checks.** Eight spec files run under the JavaScriptCore shell that ships with
+**Checks.** Nine spec files run under the JavaScriptCore shell that ships with
 macOS, since there is no `node` here. Run them from the repository root —
 `check_sw.mjs` reads files relative to the working directory:
 
 ```sh
 JSC=/System/Library/Frameworks/JavaScriptCore.framework/Versions/A/Helpers/jsc
-for s in grid sun terminator map render globe graticule sw; do
+for s in grid sun terminator map render globe graticule symbols sw; do
   $JSC -m spec/check_$s.mjs || break
 done
 python3 -m http.server 8080     # then open http://127.0.0.1:8080
@@ -577,10 +577,33 @@ spends more than half its time on the dark side, and a marker at 38% of its
 colour is one you have to hunt for. The station is drawn last of the three: where
 the operator is sitting outranks where the sky is.
 
-Size runs Sun, Moon, station, largest first, so the two sky marks read as a pair
-the station is not part of. Colour does the real work — warm for the Sun, pale
-for the Moon, against a `--station` that is neither — and size is the second
-channel behind it.
+**Reopened the same day, before it had been on the wall an hour.** Two coloured
+discs told a reader there were two bodies but not which was which, so the
+display needed a legend — and a legend is an admission that the picture failed.
+Symbols identify themselves instead: the Sun is a disc with eight rays, and the
+Moon is an outlined disc with its lit fraction filled. Both grew, because a
+phase you cannot resolve is a circle again and detail costs pixels. They live in
+`js/symbols.js`, apart from both projections, since the flat map and the globe
+have to draw the same mark and two copies would drift.
+
+The Moon's **rim is always drawn and the fill is not**, which is what makes it
+survive both ends of the month: a full Moon is a filled ring, a new Moon an
+empty one, and neither can be mistaken for the Sun once the Sun has rays. A
+literal phase with no rim would have vanished at new and turned back into an
+ambiguous white disc at full — the two nights a month when a legend would have
+been needed most.
+
+Lit limb on the right while waxing, on the left while waning. That is the
+northern-hemisphere naked-eye view, so it is a **convention and not a fact** —
+from Sydney it is inverted. Recorded as a choice because the alternative,
+orienting the crescent toward the subsolar point, is defensible and was not
+taken: it is correct from everywhere and recognisable from nowhere, since a
+crescent lying on its back does not read as a moon.
+
+Colour still does the first work — warm for the Sun, pale for the Moon, against
+a `--station` that is neither — with shape behind it and size behind that.
+Sizes were set by eye and should be retuned the same way, on the wall rather
+than in a desktop browser.
 
 Worth being honest that the two markers are not equally useful. The **Sun** is
 close to redundant: the terminator already says where it is, since the subsolar
@@ -589,19 +612,18 @@ read than a boundary, not by being new. The **Moon** is genuinely new — nothin
 else on the display carries it, and for EME the sublunar point is the geometry
 that sets the mutual window.
 
-Rejected for now: **a phase-shaped Moon.** The maths is already vendored —
-`Illumination` and `MoonPhase` are both in astronomy-engine — so this stays
-cheap whenever it is wanted. Deferred rather than dismissed, because a crescent
-is a design question that wants looking at from across the room before it wants
-coding, and DESIGN.md's rule about ink at three metres has already killed one
-layer.
-
 Rejected: **shading where the Moon is up.** A second great-circle region over
 the map, competing with the terminator that is the reason the map exists.
 
 Rejected: **the sublunar coordinates in the caption.** It already carries the
 subsolar point, and a second pair of numbers at that size is not something
 anyone reads at three metres.
+
+`spec/check_symbols.mjs` holds the phase geometry to the four phases anyone can
+look up, and to the symmetry either side of full — a sign error there would draw
+a waxing Moon all month without ever looking broken. What it cannot check is
+whether the thing reads as a moon at three metres, which only a person standing
+across the room can answer.
 
 The sublunar point is checked in `spec/check_sun.mjs` against the Moon's own
 phases rather than an almanac: its subpoint nearly coincides with the Sun's at

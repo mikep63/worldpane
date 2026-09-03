@@ -408,17 +408,9 @@ export function fillNight(ctx, region, cx, cy, r, fill) {
  * point on the far hemisphere must not be drawn at the mirrored place on the
  * near one. Returns whether it was drawn, so a caller can say so.
  */
-export function drawMarker(ctx, lat, lon, b, cx, cy, r, { stroke, fill, radius = 5 }) {
+export function drawMarker(ctx, lat, lon, b, cx, cy, r, symbol) {
   const p = toVec(lon, lat);
   if (dot(p, b.v) < 0) return false;
-  ctx.save();
-  ctx.beginPath();
-  ctx.arc(cx + r * dot(p, b.e), cy - r * dot(p, b.n), radius, 0, Math.PI * 2);
-  ctx.fillStyle = fill;
-  ctx.fill();
-  ctx.lineWidth = 2;
-  ctx.strokeStyle = stroke;
-  ctx.stroke();
-  ctx.restore();
+  symbol(cx + r * dot(p, b.e), cy - r * dot(p, b.n));
   return true;
 }

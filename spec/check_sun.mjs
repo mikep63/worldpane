@@ -9,8 +9,8 @@
 // consistent with itself.
 
 import {
-  subsolarPoint, sublunarPoint, horizonEvents, greyLine, altitude, makeObserver,
-  normaliseLon, GREY_UPPER, GREY_LOWER,
+  subsolarPoint, sublunarPoint, moonPhase, horizonEvents, greyLine, altitude,
+  makeObserver, normaliseLon, GREY_UPPER, GREY_LOWER,
 } from '../js/sun.js';
 import * as Astronomy from '../vendor/astronomy.js';
 import { toLatLon } from '../js/grid.js';
@@ -191,6 +191,11 @@ for (const [name, targetLon] of [['new', 0], ['full', 180]]) {
   const gap = separation(moon, target);
   check(`at ${name} moon the sublunar point is where the phase says`, gap < 6, true);
   if (gap >= 6) print(`     separation was ${gap.toFixed(2)} deg`);
+  // And the phase js/symbols.js draws from agrees about which moment this is.
+  // The two come from different calls, so a mix-up would show up here.
+  const reported = moonPhase(at);
+  const off = Math.min(Math.abs(reported - targetLon), 360 - Math.abs(reported - targetLon));
+  check(`moonPhase reads ${targetLon} at the ${name} moon`, off < 0.01, true);
 }
 
 // The subpoint is not the Sun's. A copy-paste that left Body.Sun in place would

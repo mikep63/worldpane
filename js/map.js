@@ -142,22 +142,13 @@ export function drawNight(ctx, polygon, w, h, fill) {
 }
 
 /**
- * A filled disc with a halo, at a lat/lon.
+ * Put a symbol at a lat/lon.
  *
- * Three things use it -- the operator's grid, and the points with the Sun and
- * the Moon overhead -- so it is named for the shape rather than for the first
- * caller. The halo is what makes it survive a busy coastline: a bare disc in
- * the operator's colour disappears into a lake at three metres.
+ * The symbol itself comes from js/symbols.js and is handed in, so this module
+ * stays about the projection and knows nothing about what a sun looks like.
+ * The globe has the same function against its own geometry.
  */
-export function drawMarker(ctx, lat, lon, w, h, { stroke, fill, radius = 5 }) {
+export function drawMarker(ctx, lat, lon, w, h, symbol) {
   const { x, y } = project(lon, lat, w, h);
-  ctx.save();
-  ctx.beginPath();
-  ctx.arc(x, y, radius, 0, Math.PI * 2);
-  ctx.fillStyle = fill;
-  ctx.fill();
-  ctx.lineWidth = 2;
-  ctx.strokeStyle = stroke;
-  ctx.stroke();
-  ctx.restore();
+  symbol(x, y);
 }

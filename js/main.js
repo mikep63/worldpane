@@ -7,12 +7,15 @@
 //   15 min space weather, matching how often SWPC publishes
 
 import { toLatLon, isValid } from './grid.js';
-import { subsolarPoint, sublunarPoint, horizonEvents, greyLine, makeObserver } from './sun.js';
+import {
+  subsolarPoint, sublunarPoint, moonPhase, horizonEvents, greyLine, makeObserver,
+} from './sun.js';
 import { nightPolygon } from './terminator.js';
 import {
   loadLayer, projectCoastline, renderBasemap, drawFieldLabels, drawNight, drawMarker,
 } from './map.js';
 import { graticule, fieldLabels } from './graticule.js';
+import * as symbols from './symbols.js';
 import * as globe from './globe.js';
 import { readAll } from './spacewx.js';
 import * as settings from './settings.js';
@@ -35,15 +38,30 @@ const HOME_MS = 900;
 const DRAG_STRIDE = 6;
 
 /**
- * Marker radii, as a fraction of the canvas width.
+ * Marker radii, as a divisor of the canvas width.
  *
- * A deliberate order of size: the Sun is the largest mark on the map, the Moon
- * a little smaller, and the operator's grid smaller still. Size is the second
- * channel after colour, and it costs nothing to make the two sky marks read as
- * a pair that the station is not part of.
+ * Bigger than a dot needs to be, because these are drawn symbols now rather
+ * than coloured discs, and a phase you cannot resolve is a circle again. The
+ * Sun's figure is the disc; its rays reach about twice that, so it is the
+ * largest mark on the map even though its radius here is the smallest.
+ *
+ * Set by eye at three metres. Anyone retuning them should do it on the wall and
+ * not in a desktop browser.
  */
-const MARKER = { sun: 200, moon: 250, station: 260 };
+const MARKER = { sun: 230, moon: 130, station: 280 };
 const radiusFor = (body, w) => Math.max(4, Math.round(w / MARKER[body]));
+
+/** The three symbols, bound to the current palette and canvas size. */
+function skySymbols(ctx, c, w, phase) {
+  const paint = { fill: c.sun, halo: c.day };
+  return {
+    sun: (x, y) => symbols.sun(ctx, x, y, radiusFor('sun', w), paint),
+    moon: (x, y) => symbols.moon(ctx, x, y, radiusFor('moon', w),
+      { fill: c.moon, halo: c.day }, phase),
+    station: (x, y) => symbols.station(ctx, x, y, radiusFor('station', w),
+      { fill: c.station, halo: c.day }),
+  };
+}
 
 // Disputed boundaries are dashed, in CSS pixels scaled to the device. See
 // DESIGN.md, "Borders, lakes and a grid": Natural Earth flags 35 of its 390
@@ -275,24 +293,15 @@ function drawFlat(now) {
   // Over the night fill, not under it. The sublunar point is on the dark side
   // rather more than half the time, and a marker dimmed to 38% is a marker you
   // have to hunt for -- which is the opposite of why it is there.
-  drawMarker(ctx, sub.lat, sub.lon, w, h, {
-    fill: c.sun, stroke: c.day, radius: radiusFor('sun', w),
-  });
   const moon = sublunarPoint(now);
-  drawMarker(ctx, moon.lat, moon.lon, w, h, {
-    fill: c.moon, stroke: c.day, radius: radiusFor('moon', w),
-  });
+  const sym = skySymbols(ctx, c, w, moonPhase(now));
+  drawMarker(ctx, sub.lat, sub.lon, w, h, sym.sun);
+  drawMarker(ctx, moon.lat, moon.lon, w, h, sym.moon);
 
   // Last, so it is never the mark that gets covered. Where the operator is
   // sitting outranks where the sky is.
   const here = toLatLon(state.settings.grid);
-  if (here) {
-    drawMarker(ctx, here.lat, here.lon, w, h, {
-      fill: c.station,
-      stroke: c.day,
-      radius: radiusFor('station', w),
-    });
-  }
+  if (here) drawMarker(ctx, here.lat, here.lon, w, h, sym.station);
   render.renderMapCaption(`Subsolar ${sub.lat.toFixed(1)}°, ${sub.lon.toFixed(1)}°`);
 }
 
@@ -413,22 +422,13 @@ function drawGlobe(now) {
   // Same order as the flat map, and the far side is handled for us: drawMarker
   // returns without drawing when the point is round the back, so the Moon
   // simply is not there for the half of the month it is behind the globe.
-  globe.drawMarker(ctx, sub.lat, sub.lon, b, cx, cy, r, {
-    fill: c.sun, stroke: c.day, radius: radiusFor('sun', w),
-  });
   const moon = sublunarPoint(now);
-  globe.drawMarker(ctx, moon.lat, moon.lon, b, cx, cy, r, {
-    fill: c.moon, stroke: c.day, radius: radiusFor('moon', w),
-  });
+  const sym = skySymbols(ctx, c, w, moonPhase(now));
+  globe.drawMarker(ctx, sub.lat, sub.lon, b, cx, cy, r, sym.sun);
+  globe.drawMarker(ctx, moon.lat, moon.lon, b, cx, cy, r, sym.moon);
 
   const here = toLatLon(state.settings.grid);
-  if (here) {
-    globe.drawMarker(ctx, here.lat, here.lon, b, cx, cy, r, {
-      fill: c.station,
-      stroke: c.day,
-      radius: radiusFor('station', w),
-    });
-  }
+  if (here) globe.drawMarker(ctx, here.lat, here.lon, b, cx, cy, r, sym.station);
 
   const subsolar = `Subsolar ${sub.lat.toFixed(1)}°, ${sub.lon.toFixed(1)}°`;
   render.renderMapCaption(isHome(g.view) ? subsolar : `${subsolar} · centred ${bearings(g.view)}`);

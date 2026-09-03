@@ -1,5 +1,6 @@
-// Sun geometry: the subsolar point that drives the terminator, the horizon
-// events for the operator's grid, and the grey-line window.
+// Sky geometry: the subsolar point that drives the terminator, the horizon
+// events for the operator's grid, the grey-line window, and the Moon's
+// subpoint and phase.
 //
 // Real ephemeris work is delegated to astronomy-engine rather than hand-rolled,
 // the same call the sibling repo makes (astrotonight-web/js/sunmoon.js). Its
@@ -86,6 +87,18 @@ export function sublunarPoint(date) {
   const eq = Astronomy.Equator(Body.Moon, date, GEOCENTRIC, true, true);
   const gast = Astronomy.SiderealTime(date);
   return { lat: eq.dec, lon: normaliseLon((eq.ra - gast) * 15) };
+}
+
+/**
+ * The Moon's phase as ecliptic elongation in degrees: 0 new, 90 first quarter,
+ * 180 full, 270 last quarter.
+ *
+ * Passed straight through from astronomy-engine so that the one place this
+ * project talks to an ephemeris stays this file. js/symbols.js turns the number
+ * into a shape and does not import an ephemeris to do it.
+ */
+export function moonPhase(date) {
+  return Astronomy.MoonPhase(date);
 }
 
 export function normaliseLon(deg) {
