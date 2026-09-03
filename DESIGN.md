@@ -76,6 +76,27 @@ and never sleeps. It also cannot be handed to another ham with a URL.
 Rejected: **iPhone-first anything.** The old plan's fifteen-second sofa glance is
 a real job, but it is not this job, and it is the job the competition is best at.
 
+**Reopened and held, 2026-09-03.** Asked again after a week that added
+satellites, pass prediction, a sky plot, transmitter frequencies, band
+conditions and offline caching — and every one of those turned out to be
+arithmetic and static data. None needed a native capability, which is a week of
+evidence for the web case rather than against it.
+
+The checkable part of the argument also moved the wrong way for native. Most of
+what a native app is reached for, Safari already does here: offline, chrome-less
+launch from the home screen, persistent storage, canvas, and even a live compass
+heading through `DeviceOrientationEvent.webkitCompassHeading`. What remains
+genuinely native-only is notifications while closed, widgets and StandBy, rig
+control over Bluetooth or CAT, and running with the screen off — and this entry
+already answers the first, because you are looking at a wall display.
+
+Two things would reopen it properly, and neither has happened: **pass alerts
+away from the shack**, which a passive page structurally cannot do, or
+**portable operating** with a compass-locked sky plot. The second is already
+half-served, since the same page installs on an iPhone today. If either does
+arrive, the right answer is a portable satellite companion as its own product —
+not a port, and not two terminators to keep in sync.
+
 ## The competitive position is worse than PLAN.md recorded · 2026-08-27
 
 PLAN.md checked OpenHamClock and concluded the web lane was ceded. Since then
