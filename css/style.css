@@ -155,7 +155,10 @@ body {
 .strip {
   flex: 1 1 auto;
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  /* Four, since the band grid arrived. The Time pane held two numbers in a
+     third of the strip and did not need it; the width came from there rather
+     than from the map or the clock's size. */
+  grid-template-columns: repeat(4, 1fr);
   gap: 1px;
   background: var(--rule);
   min-height: 0;
@@ -577,4 +580,57 @@ button.primary {
 @media (max-width: 30rem) {
   .band-list > li { grid-template-columns: 3.6rem 4.2rem; }
   .band-why { grid-column: 1 / -1; }
+}
+
+/* ---------- the band grid ------------------------------------------------ */
+
+/* "derived" beside the heading rather than in the tiles. The qualifier has to
+   be on the dashboard -- a wall of coloured bands with no caveat reads as a
+   measurement -- but it is not a thing to read twice. */
+.qualifier {
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: 0;
+  opacity: 0.75;
+}
+
+.band-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.3rem;
+  text-decoration: none;
+  color: inherit;
+}
+
+.band-cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.35rem 0.1rem;
+  border-radius: 4px;
+  border: 1px solid transparent;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  font-size: clamp(0.95rem, 2.4vh, 1.3rem);
+  line-height: 1;
+  color: var(--ink);
+}
+
+/* A wash rather than a fill. A saturated block of eight colours is a traffic
+   light array, and the number on it stops being readable in either theme;
+   mixing into the panel keeps the ink at full contrast and still gives the eye
+   the pattern from across the room. */
+.band-cell[data-state="good"]   { background: color-mix(in srgb, var(--quiet) 30%, var(--panel)); }
+.band-cell[data-state="fair"]   { background: color-mix(in srgb, var(--unsettled) 26%, var(--panel)); }
+.band-cell[data-state="poor"]   { background: color-mix(in srgb, var(--storm) 26%, var(--panel)); }
+
+/* Dead and unrateable are both absence of colour, and they are different kinds
+   of absence: closed is an answer, unknown is the lack of one. The dashed edge
+   is the only thing separating them, and the page behind says which. */
+.band-cell[data-state="closed"]  { background: transparent; color: var(--ink-dim); }
+.band-cell[data-state="unknown"] {
+  background: transparent;
+  color: var(--ink-dim);
+  border-color: var(--rule);
+  border-style: dashed;
 }

@@ -165,12 +165,14 @@ check('and so is a missing frequency', mhz(undefined), '');
 // --- the A index rides with Kp ----------------------------------------------
 // It was already in the Kp payload and being discarded. The pair is how
 // conditions are quoted, so neither should appear without the other.
-check('A joins the trend', kpTrendText(2, 5, 8), 'Kp, down from 5 \u00b7 A 8');
-check('and the steady case', kpTrendText(2, 2, 8), 'Kp, steady \u00b7 A 8');
-check('and the unknown case', kpTrendText(null, null, 8), 'Kp \u00b7 A 8');
-check('A rounds', kpTrendText(2, 2, 7.6), 'Kp, steady \u00b7 A 8');
-check('no A, no clause', kpTrendText(2, 5), 'Kp, down from 5');
-check('and a missing A is not printed as null', kpTrendText(2, 5, null), 'Kp, down from 5');
+// The A index moved out of here into the group caption when the strip went to
+// four panes -- at 270 points a tile caption fits the trend or the A index, not
+// both, and the trend is the half carrying information.
+check('the trend is the caption', kpTrendText(2, 5), 'Kp, down from 5');
+check('rising says so', kpTrendText(5, 2), 'Kp, up from 2');
+check('steady says so', kpTrendText(2, 2), 'Kp, steady');
+check('half a point is still steady', kpTrendText(2.4, 2), 'Kp, steady');
+check('and no comparison is just the label', kpTrendText(null, null), 'Kp');
 
 // --- Bz keeps its sign ------------------------------------------------------
 // Northward shuts the coupling off however strong it is, so +4 and -4 are
@@ -206,6 +208,19 @@ check('one source failing names that source',
   spaceWeatherCaption({
     flux: got(justNow), kp: got(justNow), xray: got(justNow), wind: { ok: false },
   }, swxNow), 'updated 00:55Z \u00b7 wind unreachable');
+
+// A and wind speed live here now: context for the tiles above rather than
+// readings of their own, and both were crowding a caption at four panes wide.
+check('the A index rides in the caption',
+  spaceWeatherCaption({ kp: { ok: true, at: justNow, aRunning: 10 } }, swxNow)
+    .includes('A 10'), true);
+check('and the wind speed with it',
+  spaceWeatherCaption({ wind: { ok: true, at: justNow, speed: 383 } }, swxNow)
+    .includes('wind 383 km/s'), true);
+check('a failed source contributes no context',
+  spaceWeatherCaption({ kp: { ok: false, aRunning: 10 } }, swxNow).includes('A 10'), false);
+check('and a missing A is not printed',
+  spaceWeatherCaption({ kp: { ok: true, at: justNow } }, swxNow).includes('A '), false);
 
 // Fresh data still shows when it arrived rather than falling silent. That is
 // deliberate and stronger than "staleness is always visible": a reader can tell

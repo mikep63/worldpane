@@ -174,6 +174,16 @@ export function spaceWeatherCaption(swx = {}, now = new Date()) {
   const parts = [];
   if (oldest) parts.push(age(oldest, now) || `updated ${hhmm(oldest, { utc: true })}Z`);
 
+  // Context rather than readings, and both were crowding a tile caption. They
+  // belong together: the A index is the day's geomagnetic figure to Kp's three
+  // hours, and the wind speed is what the Bz number is riding on.
+  if (swx.kp && swx.kp.ok && typeof swx.kp.aRunning === 'number') {
+    parts.push(`A ${Math.round(swx.kp.aRunning)}`);
+  }
+  if (swx.wind && swx.wind.ok && typeof swx.wind.speed === 'number') {
+    parts.push(`wind ${swx.wind.speed} km/s`);
+  }
+
   if (!known.length) parts.push('waiting for NOAA');
   else if (failed.length === SWX_KEYS.length) parts.push('NOAA unreachable');
   else if (failed.length) parts.push(`${failed.join(', ')} unreachable`);
@@ -181,16 +191,15 @@ export function spaceWeatherCaption(swx = {}, now = new Date()) {
   return parts.join(' \u00b7 ');
 }
 
-export function kpTrendText(value, previous, aRunning = null) {
-  // The A index rides along because it is already in the Kp payload and was
-  // being discarded. Kp is the three-hour index and A is the day: every
-  // propagation chart quotes the pair, and one without the other is half the
-  // picture.
-  const a = typeof aRunning === 'number' ? ` \u00b7 A ${Math.round(aRunning)}` : '';
-  if (typeof value !== 'number' || typeof previous !== 'number') return `Kp${a}`;
+export function kpTrendText(value, previous) {
+  // The A index used to ride along here. It moved to the group caption when the
+  // strip went to four panes: at 270 points a tile caption has room for the
+  // trend or the A index, not both, and the trend is the one carrying
+  // information rather than a second reading.
+  if (typeof value !== 'number' || typeof previous !== 'number') return 'Kp';
   const delta = value - previous;
-  if (Math.abs(delta) < 0.5) return `Kp, steady${a}`;
-  return `Kp, ${delta < 0 ? 'down' : 'up'} from ${trim(previous)}${a}`;
+  if (Math.abs(delta) < 0.5) return 'Kp, steady';
+  return `Kp, ${delta < 0 ? 'down' : 'up'} from ${trim(previous)}`;
 }
 
 /**
@@ -265,14 +274,8 @@ export function renderSpaceWeather(swx, now = new Date()) {
   setTile('bz', swx.wind, bzText, bzBand);
 
   $('kp-trend').textContent = swx.kp && swx.kp.ok
-    ? kpTrendText(swx.kp.value, swx.kp.previous, swx.kp.aRunning)
+    ? kpTrendText(swx.kp.value, swx.kp.previous)
     : 'Kp';
-
-  // Wind speed is context for Bz rather than a reading of its own, so it sits
-  // in the caption where Bz's own tile stays a single number.
-  $('bz-sub').textContent = swx.wind && swx.wind.ok && typeof swx.wind.speed === 'number'
-    ? `Bz nT \u00b7 ${swx.wind.speed} km/s`
-    : 'Bz nT';
 
   // One age line for the group: they refresh together, so four would be noise.
   $('swx-age').textContent = spaceWeatherCaption(swx, now);
@@ -489,16 +492,29 @@ export function renderTransmitters(list) {
 // ---------- bands -----------------------------------------------------------
 
 /**
- * The dashboard link, which carries the headline.
+ * The dashboard's band grid: eight cells, four across, coloured by state.
  *
- * "(derived)" is on the dashboard and not only on the page behind it, because
- * the dashboard is what most people will ever read. A band call with no
- * qualifier looks like a measurement.
+ * The whole block is one link to the page that explains itself, because at
+ * three metres nobody reads "good" and "poor" -- they read the pattern of
+ * colour, and anyone close enough to want the reasoning is close enough to tap.
+ *
+ * The band number is the label. "80 m" would not fit four to a 270-point pane
+ * and the metres are not in doubt.
  */
-export function renderBandLink(best) {
-  $('bands-link').textContent = best
-    ? `Bands: ${best.name} best now (derived)`
-    : 'Band conditions (derived)';
+export function renderBandGrid(rated, best) {
+  const grid = $('band-grid');
+  grid.innerHTML = '';
+  for (const band of rated) {
+    const cell = document.createElement('span');
+    cell.className = 'band-cell';
+    cell.dataset.state = band.state;
+    cell.textContent = band.name.replace(' m', '');
+    // The colour is the whole message on screen, and a colour is not a message
+    // to a screen reader, so each cell says its own state.
+    cell.setAttribute('aria-label', `${band.name} ${band.state}`);
+    grid.append(cell);
+  }
+  $('band-best').textContent = best ? `${best.name} best now` : 'nothing above poor';
 }
 
 /** The table: band, state, and the reasons that produced it. */

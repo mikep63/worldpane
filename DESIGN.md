@@ -940,6 +940,42 @@ pane height, which the strip has: this puts the space weather pane at roughly
 224 points against the 269 available at 1080x810, making it marginally the
 tallest, just past the Sky pane.
 
+## The band grid is the fourth pane · 2026-09-03
+
+Eight bands as a 4x2 block of colour in its own pane: green good, amber fair,
+red poor, no colour at all for closed, and a dashed outline for a band that
+cannot be rated because there is no flux reading. The whole block is one link to
+the page.
+
+The point is that **nobody reads "good" and "poor" at three metres** — they read
+the pattern. A wall of colour answers "is it worth turning the radio on" in the
+time it takes to look up, which the sentence it replaced ("Bands: 15 m best now
+(derived)") did not. Anyone close enough to want the reasoning is close enough
+to tap.
+
+The number alone labels each cell; "80 m" does not fit four across a 270-point
+pane and the metres were never in doubt. The **wash is mixed into the panel
+rather than filled**, because eight saturated blocks is a traffic-light array
+and the number stops being readable on it in either theme.
+
+**Where the room came from.** Not from the map, and not from the clock. The
+first proposal was to drop UTC to the size of the other times and fold sunrise
+and sunset in beneath it — rejected for the reason "One idiom for every number
+in the strip" already gives: UTC is the operating clock, logs and nets and spots
+are all in it, and it is the one number that should be findable without reading.
+Shrinking it makes sunset its peer.
+
+The width came instead from **the Time pane, which held two numbers in a third
+of the strip and did not need to.** Four panes at 270 points each cost nothing
+there. The pane that did feel it was Space weather, whose tile captions were
+already the tightest thing in the strip — so the **A index and the wind speed
+moved out of the tile captions into the group caption**, where they are better
+placed anyway: both are context for the readings above them rather than
+readings, and they now sit together.
+
+Rejected: **a second row in the strip**, which would have needed the map to give
+up sixty points of height and stop being full width.
+
 ## Band conditions are an inference, and say so · 2026-09-03
 
 A `#/bands` page rates the eight HF bands from **three numbers already on the

@@ -79,16 +79,23 @@
         -->
         <div class="tile" id="tile-bz">
           <p class="big num" id="bz">--</p>
-          <p class="sub" id="bz-sub">Bz nT</p>
+          <p class="sub">Bz nT</p>
         </div>
       </div>
       <p class="caption" id="swx-age"></p>
-      <!--
-      Bands were cut from settings in August for having nothing band-specific
-      to point at. This is that thing. See DESIGN.md, "Band conditions are an
-      inference, and say so".
-      -->
-      <a class="passes-link" href="#/bands" id="bands-link">Band conditions</a>
+    </section>
+
+    <!--
+    Eight bands as a 4x2 block of colour. At three metres nobody reads the
+    words good and poor -- they read the pattern, and the pattern is the whole
+    point. The grid is one link to the page that explains itself. See
+    DESIGN.md, "The band grid is the fourth pane".
+    -->
+    <section class="group" aria-labelledby="lbl-bands">
+      <h2 id="lbl-bands" class="label">Bands <span class="qualifier">derived</span></h2>
+      <a class="band-grid" id="band-grid" href="#/bands"
+         aria-label="Band conditions, derived"></a>
+      <p class="caption" id="band-best"></p>
     </section>
   </div>
 

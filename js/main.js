@@ -759,7 +759,7 @@ function tickMap() {
 
   // The link's headline moves with the flux, the K index and the sun, so it is
   // rebuilt on the map tick rather than only when the page is opened.
-  render.renderBandLink(bestBand(bandConditions(now)));
+  updateBandGrid(now);
 
   refreshPass(now);
   render.renderSatellite(state.pass, now, {
@@ -773,7 +773,7 @@ async function tickSpaceWeather() {
   const now = new Date();
   render.renderSpaceWeather(state.swx, now);
   // New flux or K can change every band call, including the headline.
-  render.renderBandLink(bestBand(bandConditions(now)));
+  updateBandGrid(now);
   if (!document.getElementById('bands').hidden) buildBandPage();
 
   // Retry only when nothing at all arrived, which is what a missing network
@@ -807,6 +807,12 @@ function bandConditions(now = new Date()) {
 function buildBandPage() {
   const conditions = bandConditions();
   render.renderBands(bandStates(conditions), conditions);
+}
+
+/** The dashboard grid. Cheap -- eight scores from three numbers already held. */
+function updateBandGrid(now = new Date()) {
+  const conditions = bandConditions(now);
+  render.renderBandGrid(bandStates(conditions), bestBand(conditions));
 }
 
 // ---------- routing ---------------------------------------------------------
