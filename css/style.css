@@ -143,14 +143,25 @@ body {
   color: var(--ink-dim);
 }
 
-.map-wrap .caption {
+/* Both bottom corners get the same treatment, so they read as one footer rather
+   than two things that happen to be near the edge. The wash replaces the
+   callsign's old text-shadow: a shadow is legible over ocean and not over a
+   coastline, and the callsign now sits low enough to meet one. */
+.map-wrap .caption,
+.map-wrap .callsign {
   position: absolute;
-  right: 0.6rem;
   bottom: 0.4rem;
   background: color-mix(in srgb, var(--bg) 70%, transparent);
   padding: 0.1rem 0.4rem;
   border-radius: 3px;
 }
+
+.map-wrap .caption { right: 0.6rem; }
+
+/* Inset past the Maidenhead row letters, which are drawn about three points
+   from the left edge in a twelve-point face. Anything under 1.2rem lands on
+   them again. */
+.map-wrap .callsign { left: 1.6rem; }
 
 .strip {
   flex: 1 1 auto;
@@ -227,15 +238,11 @@ body {
 .tile[data-band="unknown"]   .big { color: var(--ink-dim); }
 
 .callsign {
-  position: absolute;
-  left: 0.9rem;
-  top: 0.7rem;
   margin: 0;
   font-size: 0.85rem;
   font-weight: 600;
   letter-spacing: 0.12em;
   color: var(--ink-mid);
-  text-shadow: 0 1px 3px var(--bg);
 }
 
 .gear {

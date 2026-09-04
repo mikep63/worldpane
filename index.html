@@ -18,6 +18,13 @@
 <main id="dashboard" hidden>
   <div class="map-wrap">
     <canvas id="map" aria-label="World map with the day and night terminator"></canvas>
+    <!--
+    The two bottom corners: whose shack this is, and where the sun is. The
+    callsign was top-left until 2026-09-04, which is where the Maidenhead row
+    and column letters both begin. See DESIGN.md, "The map's two bottom
+    corners".
+    -->
+    <p class="callsign" id="callsign"></p>
     <p id="map-caption" class="caption"></p>
   </div>
 
@@ -99,7 +106,6 @@
     </section>
   </div>
 
-  <p class="callsign" id="callsign"></p>
   <a class="gear" href="#/settings" aria-label="Settings">
     <svg viewBox="0 0 24 24" width="26" height="26" aria-hidden="true" focusable="false">
       <path fill="currentColor" d="M12 15.5A3.5 3.5 0 1 1 15.5 12 3.5 3.5 0 0 1 12 15.5zm7.4-2.6.02-.9-.02-.9 1.9-1.5a.5.5 0 0 0 .12-.62l-1.8-3.1a.5.5 0 0 0-.6-.22l-2.24.9a7 7 0 0 0-1.55-.9l-.34-2.38a.5.5 0 0 0-.5-.42h-3.6a.5.5 0 0 0-.5.42l-.34 2.38a7 7 0 0 0-1.55.9l-2.24-.9a.5.5 0 0 0-.6.22l-1.8 3.1a.5.5 0 0 0 .12.62l1.9 1.5-.02.9.02.9-1.9 1.5a.5.5 0 0 0-.12.62l1.8 3.1a.5.5 0 0 0 .6.22l2.24-.9a7 7 0 0 0 1.55.9l.34 2.38a.5.5 0 0 0 .5.42h3.6a.5.5 0 0 0 .5-.42l.34-2.38a7 7 0 0 0 1.55-.9l2.24.9a.5.5 0 0 0 .6-.22l1.8-3.1a.5.5 0 0 0-.12-.62z"/>
