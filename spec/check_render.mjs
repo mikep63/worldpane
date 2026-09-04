@@ -9,7 +9,7 @@
 
 import {
   hhmm, ss, duration, age, greyLineText, nextPassText, compass, bearing, mhz,
-  kpTrendText, bzText, trim,
+  kpTrendText, bzText, spaceWeatherCaption, trim,
 } from '../js/render.js';
 
 let failures = 0;
@@ -180,6 +180,50 @@ check('northward carries an explicit plus', bzText(4), '+4');
 check('zero is neither', bzText(0), '0');
 check('fractions survive', bzText(-2.5), '-2.5');
 check('a missing reading is not NaN', bzText(null), '--');
+
+// --- the space weather caption ----------------------------------------------
+// Where "staleness is always visible" is actually implemented. Two of these
+// four states used to be silent, which is the opposite of the rule: an empty
+// object printed nothing at all, and a total failure printed a list of internal
+// key names.
+
+const swxNow = new Date('2026-09-04T01:00:00Z');
+const got = (at) => ({ ok: true, at });
+const justNow = new Date(swxNow.getTime() - 5 * 60000);
+const hoursAgo = new Date(swxNow.getTime() - 3 * 3600000);
+
+check('nothing fetched yet says so',
+  spaceWeatherCaption({}, swxNow), 'waiting for NOAA');
+check('and an absent argument does not throw',
+  spaceWeatherCaption(undefined, swxNow), 'waiting for NOAA');
+
+check('everything failing names the source, not the keys',
+  spaceWeatherCaption({
+    flux: { ok: false }, kp: { ok: false }, xray: { ok: false }, wind: { ok: false },
+  }, swxNow), 'NOAA unreachable');
+
+check('one source failing names that source',
+  spaceWeatherCaption({
+    flux: got(justNow), kp: got(justNow), xray: got(justNow), wind: { ok: false },
+  }, swxNow), 'updated 00:55Z \u00b7 wind unreachable');
+
+// Fresh data still shows when it arrived rather than falling silent. That is
+// deliberate and stronger than "staleness is always visible": a reader can tell
+// a working panel from a frozen one without waiting for it to go stale.
+check('fresh data gives its update time',
+  spaceWeatherCaption({
+    flux: got(justNow), kp: got(justNow), xray: got(justNow), wind: got(justNow),
+  }, swxNow), 'updated 00:55Z');
+
+check('stale data says how stale, from the oldest of them',
+  spaceWeatherCaption({
+    flux: got(hoursAgo), kp: got(justNow), xray: got(justNow), wind: got(justNow),
+  }, swxNow), '3 h old');
+
+check('stale and failing says both',
+  spaceWeatherCaption({
+    flux: { ok: false, at: hoursAgo }, kp: got(justNow), xray: got(justNow), wind: got(justNow),
+  }, swxNow), '3 h old \u00b7 flux unreachable');
 
 if (failures) {
   print(`\n${failures} check(s) failed.`);

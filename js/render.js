@@ -153,6 +153,34 @@ export function mhz(hz) {
   return four.endsWith('0') ? four.slice(0, -1) : four;
 }
 
+// The four space weather readings, in the order they are shown.
+const SWX_KEYS = ['flux', 'kp', 'xray', 'wind'];
+
+/**
+ * The one caption under the space weather tiles.
+ *
+ * This is where "staleness is always visible" is actually implemented, so it is
+ * pure and checked rather than living inside the DOM code. Four states, and the
+ * first two were both silent before: an empty object -- the first fetch still
+ * in flight -- printed nothing, and a total failure printed a comma-separated
+ * list of internal key names.
+ */
+export function spaceWeatherCaption(swx = {}, now = new Date()) {
+  const known = SWX_KEYS.filter((k) => swx[k]);
+  const failed = SWX_KEYS.filter((k) => swx[k] && !swx[k].ok);
+  const times = SWX_KEYS.map((k) => swx[k] && swx[k].at).filter((d) => d instanceof Date);
+  const oldest = times.length ? new Date(Math.min(...times)) : null;
+
+  const parts = [];
+  if (oldest) parts.push(age(oldest, now) || `updated ${hhmm(oldest, { utc: true })}Z`);
+
+  if (!known.length) parts.push('waiting for NOAA');
+  else if (failed.length === SWX_KEYS.length) parts.push('NOAA unreachable');
+  else if (failed.length) parts.push(`${failed.join(', ')} unreachable`);
+
+  return parts.join(' \u00b7 ');
+}
+
 export function kpTrendText(value, previous, aRunning = null) {
   // The A index rides along because it is already in the Kp payload and was
   // being discarded. Kp is the three-hour index and A is the day: every
@@ -247,16 +275,7 @@ export function renderSpaceWeather(swx, now = new Date()) {
     : 'Bz nT';
 
   // One age line for the group: they refresh together, so four would be noise.
-  const keys = ['flux', 'kp', 'xray', 'wind'];
-  const times = keys
-    .map((k) => swx[k] && swx[k].at)
-    .filter((d) => d instanceof Date);
-  const oldest = times.length ? new Date(Math.min(...times)) : null;
-  const failed = keys.filter((k) => swx[k] && !swx[k].ok);
-  const parts = [];
-  if (oldest) parts.push(age(oldest, now) || `updated ${hhmm(oldest, { utc: true })}Z`);
-  if (failed.length) parts.push(`${failed.join(', ')} unreachable`);
-  $('swx-age').textContent = parts.join(' · ');
+  $('swx-age').textContent = spaceWeatherCaption(swx, now);
 }
 
 function setTile(id, entry, format, band) {

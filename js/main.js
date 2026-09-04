@@ -41,6 +41,13 @@ const TLE_MS = 12 * 60 * 60 * 1000;
 // thirteen thousand propagations to redraw the same sentence.
 const PASS_MS = 10 * 60 * 1000;
 const TLE_KEY = 'worldpane.tle.v1';
+// Recovery, which is a different job from refreshing. Fifteen minutes and
+// twelve hours are the right cadences for keeping data current and hopeless
+// ones for a first attempt that failed: an iPad woken before its wifi has
+// associated -- which is what happens every time the shack powers up -- would
+// sit with empty tiles for a quarter of an hour and no satellites for half a
+// day. Backs off so a source that is genuinely down is not hammered.
+const RETRY_MS = [30, 60, 120, 300, 600].map((s) => s * 1000);
 
 // Globe only. A turned globe is left turned, and a display that runs for months
 // has to put itself back: without this you walk into the shack and it is showing
@@ -106,6 +113,7 @@ const state = {
   // is looking at.
   passList: [],
   selectedPass: 0,
+  retries: { swx: { attempt: 0, timer: 0 }, tle: { attempt: 0, timer: 0 } },
   // Frequencies and modes, bundled rather than fetched: SatNOGS DB sends no
   // CORS header. See DESIGN.md, "Frequencies are bundled, not fetched".
   transmitters: null,
@@ -531,6 +539,28 @@ function onPointerUp(event) {
   armIdleReturn();
 }
 
+// ---------- retries ---------------------------------------------------------
+
+/**
+ * Book another attempt, or stand down.
+ *
+ * Called with whether the attempt worked. Success resets the backoff; failure
+ * schedules the next one and lengthens the wait. The cap sits below the normal
+ * refresh interval, so a source that stays down settles into polling rather
+ * than escalating.
+ */
+function afterAttempt(key, ok, run) {
+  const r = state.retries[key];
+  clearTimeout(r.timer);
+  if (ok) {
+    r.attempt = 0;
+    return;
+  }
+  const wait = RETRY_MS[Math.min(r.attempt, RETRY_MS.length - 1)];
+  r.attempt += 1;
+  r.timer = setTimeout(run, wait);
+}
+
 // ---------- satellites ------------------------------------------------------
 
 /**
@@ -569,16 +599,20 @@ function adoptTle({ records, at }) {
 }
 
 async function tickTle() {
+  let ok = false;
   try {
     const { text, records, at } = await fetchTle();
     storeTle(text, at);
     adoptTle({ records, at });
+    ok = true;
   } catch (err) {
     // Keep whatever is already loaded and let the line grow stale. A wall
     // display that lost CelesTrak for an afternoon should still know roughly
     // when the ISS is next over.
     console.error('TLE fetch failed', err);
   }
+  afterAttempt('tle', ok, tickTle);
+  return ok;
 }
 
 /**
@@ -741,6 +775,12 @@ async function tickSpaceWeather() {
   // New flux or K can change every band call, including the headline.
   render.renderBandLink(bestBand(bandConditions(now)));
   if (!document.getElementById('bands').hidden) buildBandPage();
+
+  // Retry only when nothing at all arrived, which is what a missing network
+  // looks like. One endpoint being down is not worth a backoff loop -- the
+  // fifteen-minute cadence will collect it, and the panel says it is stale.
+  const any = Object.values(state.swx).some((entry) => entry && entry.ok);
+  afterAttempt('swx', any, tickSpaceWeather);
 }
 
 // ---------- bands -----------------------------------------------------------
@@ -943,6 +983,16 @@ async function start() {
   setInterval(() => settings.isConfigured(state.settings) && tickMap(), MAP_MS);
   setInterval(() => settings.isConfigured(state.settings) && tickSpaceWeather(), SWX_MS);
   setInterval(tickTle, TLE_MS);
+
+  // The network coming back is the signal a backoff cannot anticipate. Reset
+  // both and go immediately: an operator who has just fixed the wifi should not
+  // then wait out a ten-minute retry.
+  window.addEventListener('online', () => {
+    state.retries.swx.attempt = 0;
+    state.retries.tle.attempt = 0;
+    if (settings.isConfigured(state.settings)) tickSpaceWeather();
+    if (!state.sats.length) tickTle();
+  });
 
   // Coming back from sleep can be hours later; redraw rather than wait out the
   // interval with a stale terminator on screen.

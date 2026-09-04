@@ -309,6 +309,30 @@ a year?* — not overlooked.
 If any return, they return *after* the small version has shipped and survived a
 year.
 
+## Recovering is a different job from refreshing · 2026-09-03
+
+Space weather refreshes every fifteen minutes and element sets every twelve
+hours. Those are the right cadences for keeping data current and hopeless ones
+for a first attempt that failed, which is exactly what happens when the iPad
+wakes before its wifi has associated — every time the shack powers up. The
+display sat with empty tiles for a quarter of an hour and said "Satellites
+unavailable" for **half a day**, with nothing wrong but one lost fetch.
+
+So a failed attempt now books its own retry, backing off 30 s, 1, 2, 5, 10
+minutes. The cap sits **below** the fifteen-minute refresh interval, so a source
+that is genuinely down settles into polling rather than escalating. Coming
+`online` resets both and retries at once, because that is the one signal a
+backoff cannot anticipate — an operator who has just fixed the wifi should not
+then wait out a ten-minute timer.
+
+Space weather retries only when **nothing at all** arrived, which is what a
+missing network looks like. One endpoint being down is not worth a backoff loop:
+the normal cadence collects it and the panel already says that reading is stale.
+
+Found on the wall, not in a check. The failure needs a display that starts
+without a network, which is the normal case for the actual product and the
+abnormal one for every way it had been tested.
+
 ## Staleness is always visible · 2026-08-17
 
 A failed fetch leaves yesterday's file in place, so the display degrades to
