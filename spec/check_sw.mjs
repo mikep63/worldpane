@@ -123,8 +123,17 @@ for (const path of [...referenced].sort()) {
     print(`FAIL the app loads ${path}, which sw.js does not precache`);
   }
 }
+const indexSource = read(indexPath);
 check('index.html registers the worker',
-  /navigator\.serviceWorker\.register\(/.test(read(indexPath)), true);
+  /navigator\.serviceWorker\.register\(/.test(indexSource), true);
+// The display is meant to run unattended for months, and a worker only checks
+// for a new version on a navigation -- which a wall-mounted kiosk never makes.
+// Without a scheduled update it would keep the generation it was installed
+// with indefinitely, silently.
+check('and schedules its own update checks',
+  /registration\.update\(\)/.test(indexSource), true);
+check('and reloads when a new worker takes over',
+  /controllerchange/.test(indexSource), true);
 
 // --- the cache name tracks the contents --------------------------------------
 // FNV-1a over each path and its bytes, in list order, so a changed file, a

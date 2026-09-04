@@ -49,6 +49,12 @@ say so rather than going blank.
 Load it twice the first time: the first load installs the offline copy, the
 second serves it.
 
+After that it looks after itself. The page checks for a new version every hour
+and when the network returns, and reloads when one arrives — so a display left
+under Guided Access picks up a deploy on its own rather than needing to be quit
+by hand. To force it sooner: triple-click Home to end Guided Access, double-click
+Home and swipe the app away, then relaunch.
+
 ## Running it locally
 
 No build step and no dependencies. Any static file server will do:

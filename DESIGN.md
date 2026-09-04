@@ -376,6 +376,19 @@ install or not at all, never one at a time, and the install fetches with
 serves assets with a 600-second cache and can hand a browser a fresh
 `index.html` against a stale `main.js`.
 
+**The display updates itself, because it can never navigate.** A worker only
+looks for a new version when the page navigates, and a kiosk pinned to a wall
+under Guided Access never does — left alone it would run the generation it was
+installed with until somebody walked over and quit it by hand, which fails the
+standing test of what survives a year of neglect. So the page calls
+`registration.update()` hourly, and on `online`, and reloads itself when a new
+worker takes control. Abrupt is safe here precisely because a generation swaps
+atomically: there is no half-updated state to land in.
+
+The reload is guarded twice — against the very first install, where a worker
+claiming an uncontrolled page fires the same event an update does and would
+loop, and against reloading more than once.
+
 The cache name is a **digest of the precached files**, computed by
 `spec/check_sw.mjs`, which fails when the two disagree and prints the line to
 paste. Rejected: **a hand-bumped version number.** Forgetting it has no symptom
