@@ -140,7 +140,11 @@ export async function readAll(previous = {}) {
   const entries = await Promise.all(
     Object.entries(READERS).map(async ([key, read]) => {
       try {
-        return [key, { ok: true, ...(await read()) }];
+        // `at` is when the observation was made and `fetchedAt` is when we last
+        // succeeded in asking. They are wildly different for the flux endpoint,
+        // which publishes once a day -- reporting the observation age made the
+        // panel say "6 h old" permanently while everything worked perfectly.
+        return [key, { ok: true, fetchedAt: new Date(), ...(await read()) }];
       } catch (err) {
         const last = previous[key];
         return [key, { ...(last && last.ok ? last : {}), ok: false, error: String(err.message || err) }];

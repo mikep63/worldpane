@@ -333,6 +333,52 @@ Found on the wall, not in a check. The failure needs a display that starts
 without a network, which is the normal case for the actual product and the
 abnormal one for every way it had been tested.
 
+## CelesTrak blocked us, and it was fair · 2026-09-04
+
+The display showed "Satellites unavailable" and CelesTrak was returning **403**:
+
+> We have detected excessive downloads for files in the /NORAD/elements
+> directory and access has been temporarily blocked... orbital data files are
+> only checked for updates every 2 hours and most orbital data only updates 2-3
+> times a day. Please check your scripts.
+
+Self-inflicted, twice over: fetches while building, and a retry that hit them
+every ten minutes and never gave up. The galling part is that "CelesTrak
+explicitly asks not to be hammered" was already written down in this file, under
+the deferred entry about the scheduled Action, before the retry was written.
+
+So **retry policy is per source now, not one schedule for everything.** NOAA's
+endpoints are tiny, public and update every few minutes; they keep the repeating
+backoff. CelesTrak gets a long one that **stops** — 1, 5, 15, 60 minutes and
+then nothing, leaving the twelve-hour refresh and the `online` event to recover.
+Element sets are cached on the device, so a display that has ever succeeded goes
+on working from them.
+
+And a **refusal is not a failure to reach something.** Any 4xx now abandons the
+backoff immediately rather than working through it, because retrying past a 403
+is how a two-hour block becomes a longer one.
+
+The wider lesson, since this is the second time: a policy recorded in this file
+is not the same as a policy applied. Both times the reasoning was here and the
+code went the other way.
+
+## The age line is about the conversation, not the observation · 2026-09-04
+
+The space weather panel read "6 h old" while everything was working perfectly.
+NOAA's flux endpoint publishes **once a day**, timestamped 20:00 UTC, so its
+observation is hours old the moment it arrives and the panel said so
+permanently.
+
+That is worse than useless. "Staleness is always visible" exists so a reader can
+trust the numbers; a line that says "old" whether or not anything is wrong
+teaches them to ignore it, which is the one outcome the rule was written to
+prevent.
+
+Each reading now carries **`fetchedAt`** — when we last succeeded in asking —
+alongside `at`, which is when the observation was made. The caption reports the
+first. A source that has been failing keeps its last good `fetchedAt`, so a
+genuinely stale panel still says so.
+
 ## Staleness is always visible · 2026-08-17
 
 A failed fetch leaves yesterday's file in place, so the display degrades to

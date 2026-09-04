@@ -41,13 +41,28 @@ const TLE_MS = 12 * 60 * 60 * 1000;
 // thirteen thousand propagations to redraw the same sentence.
 const PASS_MS = 10 * 60 * 1000;
 const TLE_KEY = 'worldpane.tle.v1';
-// Recovery, which is a different job from refreshing. Fifteen minutes and
-// twelve hours are the right cadences for keeping data current and hopeless
-// ones for a first attempt that failed: an iPad woken before its wifi has
-// associated -- which is what happens every time the shack powers up -- would
-// sit with empty tiles for a quarter of an hour and no satellites for half a
-// day. Backs off so a source that is genuinely down is not hammered.
-const RETRY_MS = [30, 60, 120, 300, 600].map((s) => s * 1000);
+/**
+ * Recovery, which is a different job from refreshing, and a different policy
+ * per source.
+ *
+ * The reason for a retry at all: an iPad woken before its wifi has associated
+ * -- which is what happens every time the shack powers up -- would otherwise
+ * sit with empty tiles for a quarter of an hour and no satellites for half a
+ * day.
+ *
+ * The reason the two differ: **CelesTrak blocked this display on 2026-09-04**
+ * for exactly this. Their files are checked for updates every two hours and
+ * most orbital data changes two or three times a day, so a ten-minute retry
+ * that never gives up is precisely the script their policy is aimed at -- and
+ * DESIGN.md had already recorded that they ask not to be polled hard. NOAA's
+ * endpoints are tiny and public and keep the repeating schedule; CelesTrak gets
+ * a long one that stops, leaving the twelve-hour refresh and `online` to
+ * recover.
+ */
+const RETRY = {
+  swx: { waits: [30, 60, 120, 300, 600], repeat: true },
+  tle: { waits: [60, 300, 900, 3600], repeat: false },
+};
 
 // Globe only. A turned globe is left turned, and a display that runs for months
 // has to put itself back: without this you walk into the shack and it is showing
@@ -549,14 +564,22 @@ function onPointerUp(event) {
  * refresh interval, so a source that stays down settles into polling rather
  * than escalating.
  */
-function afterAttempt(key, ok, run) {
+function afterAttempt(key, ok, run, { giveUp = false } = {}) {
+  const policy = RETRY[key];
   const r = state.retries[key];
   clearTimeout(r.timer);
   if (ok) {
     r.attempt = 0;
     return;
   }
-  const wait = RETRY_MS[Math.min(r.attempt, RETRY_MS.length - 1)];
+  // A refusal is not a failure to reach something -- it is being told to stop.
+  // Retrying through a 403 is how a temporary block becomes a longer one.
+  if (giveUp) {
+    r.attempt = policy.waits.length;
+    return;
+  }
+  if (r.attempt >= policy.waits.length && !policy.repeat) return;
+  const wait = policy.waits[Math.min(r.attempt, policy.waits.length - 1)] * 1000;
   r.attempt += 1;
   r.timer = setTimeout(run, wait);
 }
@@ -600,6 +623,7 @@ function adoptTle({ records, at }) {
 
 async function tickTle() {
   let ok = false;
+  let refused = false;
   try {
     const { text, records, at } = await fetchTle();
     storeTle(text, at);
@@ -610,8 +634,11 @@ async function tickTle() {
     // display that lost CelesTrak for an afternoon should still know roughly
     // when the ISS is next over.
     console.error('TLE fetch failed', err);
+    // 403 is CelesTrak's block, 404 a moved file: both mean stop asking. Only a
+    // network failure or a 5xx is worth coming back for soon.
+    refused = /HTTP 4\d\d/.test(String(err && err.message));
   }
-  afterAttempt('tle', ok, tickTle);
+  afterAttempt('tle', ok, tickTle, { giveUp: refused });
   return ok;
 }
 

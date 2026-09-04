@@ -190,7 +190,7 @@ check('a missing reading is not NaN', bzText(null), '--');
 // key names.
 
 const swxNow = new Date('2026-09-04T01:00:00Z');
-const got = (at) => ({ ok: true, at });
+const got = (at) => ({ ok: true, at, fetchedAt: at });
 const justNow = new Date(swxNow.getTime() - 5 * 60000);
 const hoursAgo = new Date(swxNow.getTime() - 3 * 3600000);
 
@@ -235,9 +235,21 @@ check('stale data says how stale, from the oldest of them',
     flux: got(hoursAgo), kp: got(justNow), xray: got(justNow), wind: got(justNow),
   }, swxNow), '3 h old');
 
+// The age is of the conversation with NOAA, not of the observation. The flux
+// endpoint publishes once a day, so a reading whose time_tag is six hours old
+// is entirely normal and says nothing about whether the display is connected.
+check('an old observation fetched just now is not stale',
+  spaceWeatherCaption({
+    flux: { ok: true, at: hoursAgo, fetchedAt: justNow },
+    kp: got(justNow), xray: got(justNow), wind: got(justNow),
+  }, swxNow), 'updated 00:55Z');
+
+// A failed source keeps its last good reading and the time it arrived, so a
+// source that has been down for three hours is genuinely three hours stale.
 check('stale and failing says both',
   spaceWeatherCaption({
-    flux: { ok: false, at: hoursAgo }, kp: got(justNow), xray: got(justNow), wind: got(justNow),
+    flux: { ok: false, at: hoursAgo, fetchedAt: hoursAgo },
+    kp: got(justNow), xray: got(justNow), wind: got(justNow),
   }, swxNow), '3 h old \u00b7 flux unreachable');
 
 // --- callsign sizing --------------------------------------------------------

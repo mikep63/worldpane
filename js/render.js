@@ -168,7 +168,13 @@ const SWX_KEYS = ['flux', 'kp', 'xray', 'wind'];
 export function spaceWeatherCaption(swx = {}, now = new Date()) {
   const known = SWX_KEYS.filter((k) => swx[k]);
   const failed = SWX_KEYS.filter((k) => swx[k] && !swx[k].ok);
-  const times = SWX_KEYS.map((k) => swx[k] && swx[k].at).filter((d) => d instanceof Date);
+  // When we last spoke to NOAA, not when NOAA made the observation. The flux
+  // endpoint publishes once a day, so the observation is hours old the moment
+  // it arrives -- reporting that had the panel saying "6 h old" permanently,
+  // which teaches a reader to ignore the one line meant to be believed.
+  const times = SWX_KEYS
+    .map((k) => swx[k] && swx[k].fetchedAt)
+    .filter((d) => d instanceof Date);
   const oldest = times.length ? new Date(Math.min(...times)) : null;
 
   const parts = [];
