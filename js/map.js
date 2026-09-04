@@ -56,6 +56,33 @@ export async function loadLayer(url) {
   return res.json();
 }
 
+/**
+ * Backing-store size for a map canvas of a given CSS width.
+ *
+ * The 2:1 is the projection's and not a preference: an equirectangular world is
+ * 360 degrees across and 180 down. Pulled out of the DOM code so the one piece
+ * of arithmetic that decides the map's shape can be checked, since getting it
+ * wrong squashes the world rather than failing.
+ *
+ * **Null for a width of zero**, which is what a hidden dashboard measures.
+ * Adopting that writes `height: 0px` onto the element and rebuilds the basemap
+ * at no size; the caller keeps the last good size instead.
+ *
+ * The device pixel ratio is capped at 2 -- beyond it the coastline gains no
+ * visible detail and the basemap quadruples in memory.
+ */
+export function canvasSize(cssWidth, devicePixelRatio = 1) {
+  if (!(cssWidth > 0)) return null;
+  const dpr = Math.min(Math.max(devicePixelRatio || 1, 1), 2);
+  const cssH = Math.round(cssWidth / 2);
+  return {
+    cssH,
+    dpr,
+    w: Math.round(cssWidth * dpr),
+    h: Math.round(cssH * dpr),
+  };
+}
+
 /** Stroke pre-projected pixel runs. `dash` is in device pixels, or null. */
 export function strokeLines(ctx, lines, { stroke, lineWidth = 1, dash = null }) {
   ctx.save();

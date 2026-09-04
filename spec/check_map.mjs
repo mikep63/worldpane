@@ -6,7 +6,7 @@
 //   /System/Library/Frameworks/JavaScriptCore.framework/Versions/A/Helpers/jsc \
 //     -m spec/check_map.mjs
 
-import { project, unproject, projectCoastline } from '../js/map.js';
+import { project, unproject, projectCoastline, canvasSize } from '../js/map.js';
 import { toLatLon } from '../js/grid.js';
 
 let failures = 0;
@@ -68,6 +68,42 @@ check('decoded line has three points', pts.length, 6);
 check('first point is the NW corner', [pts[0], pts[1]], [0, 0]);
 check('middle point is null island', [pts[2], pts[3]], [W / 2, H / 2]);
 check('last point is the SE corner', [pts[4], pts[5]], [W, H]);
+
+// --- canvas sizing ----------------------------------------------------------
+// The one piece of arithmetic that decides the map's shape. Getting it wrong
+// does not fail, it squashes the world -- the drawing stays a correct 2:1 while
+// the element it lands in is not, so continents come out wide and short.
+
+for (const cssW of [320, 768, 1024, 1080, 1440]) {
+  const s = canvasSize(cssW, 2);
+  check(`${cssW}: css height is half the width`, s.cssH, cssW / 2);
+  check(`${cssW}: backing store is 2:1`, Math.abs(s.w / s.h - 2) < 0.01, true);
+  check(`${cssW}: backing store follows the device ratio`, s.w, cssW * 2);
+}
+
+// An odd width cannot divide exactly; it must still be within a pixel of 2:1
+// rather than drifting.
+for (const cssW of [1081, 999, 777]) {
+  const s = canvasSize(cssW, 2);
+  check(`${cssW}: an odd width stays 2:1 within rounding`, Math.abs(s.w / s.h - 2) < 0.01, true);
+}
+
+// --- a hidden element measures zero -----------------------------------------
+// This is the whole reason the function returns null rather than a size. A
+// hidden dashboard has clientWidth 0, and adopting that wrote height:0px onto
+// the canvas and rebuilt the basemap at no size, once a minute.
+check('zero width is refused', canvasSize(0, 2), null);
+check('a negative width is refused', canvasSize(-10, 2), null);
+check('a missing width is refused', canvasSize(undefined, 2), null);
+check('a NaN width is refused', canvasSize(NaN, 2), null);
+
+// --- the device pixel ratio -------------------------------------------------
+check('a 1x display is not upscaled', canvasSize(1000, 1).w, 1000);
+check('a 2x display doubles', canvasSize(1000, 2).w, 2000);
+check('3x is capped at 2', canvasSize(1000, 3).dpr, 2);
+check('and so is anything higher', canvasSize(1000, 4).w, 2000);
+check('a missing ratio is treated as 1', canvasSize(1000, undefined).dpr, 1);
+check('a nonsense ratio does not shrink the canvas', canvasSize(1000, 0).dpr, 1);
 
 if (failures) {
   print(`\n${failures} check(s) failed.`);

@@ -14,6 +14,7 @@ import {
 import { nightPolygon } from './terminator.js';
 import {
   loadLayer, projectCoastline, renderBasemap, drawFieldLabels, drawNight, drawMarker,
+  canvasSize,
 } from './map.js';
 import { graticule, fieldLabels } from './graticule.js';
 import * as symbols from './symbols.js';
@@ -166,17 +167,18 @@ const canvas = document.getElementById('map');
  * whole point of pre-painting.
  */
 function sizeCanvas() {
-  const dpr = Math.min(window.devicePixelRatio || 1, 2);
-  const cssW = canvas.parentElement.clientWidth;
-  const cssH = Math.round(cssW / 2); // equirectangular is 2:1
-  canvas.style.height = `${cssH}px`;
-  const w = Math.round(cssW * dpr);
-  const h = Math.round(cssH * dpr);
-  if (w === state.size.w && h === state.size.h) return false;
-  canvas.width = w;
-  canvas.height = h;
-  state.size = { w, h };
-  state.dpr = dpr;
+  // A hidden dashboard measures zero. canvasSize refuses it, and refusing is
+  // the point: sizing to zero used to write `height: 0px` onto the canvas and
+  // rebuild the whole basemap at no size, once a minute, for as long as anyone
+  // sat on another page.
+  const size = canvasSize(canvas.parentElement.clientWidth, window.devicePixelRatio);
+  if (!size) return false;
+  canvas.style.height = `${size.cssH}px`;
+  if (size.w === state.size.w && size.h === state.size.h) return false;
+  canvas.width = size.w;
+  canvas.height = size.h;
+  state.size = { w: size.w, h: size.h };
+  state.dpr = size.dpr;
   return true;
 }
 
@@ -643,6 +645,10 @@ function passPageShowing() {
   return !document.getElementById('satellites').hidden;
 }
 
+function dashboardShowing() {
+  return !document.getElementById('dashboard').hidden;
+}
+
 /**
  * Rebuild the pass page if it is the page on screen.
  *
@@ -697,9 +703,16 @@ function tickMap() {
   const now = new Date();
   const here = toLatLon(state.settings.grid);
   if (!here) return;
-  const obs = makeObserver(here.lat, here.lon);
 
-  applyTheme();          // auto theme can flip at sunrise or sunset
+  // The theme is the one thing every page shares, so it flips at sunrise
+  // whichever page is on screen. Everything below this draws the dashboard or
+  // writes to it, and there is no sense doing either to a page nobody is
+  // looking at -- it was a basemap rebuild and a search of twenty-four hours of
+  // orbits, every minute, for a screen that was not on.
+  applyTheme();
+  if (!dashboardShowing()) return;
+
+  const obs = makeObserver(here.lat, here.lon);
   if (sizeCanvas() || state.basemapKey !== basemapKey()) rebuildBasemap();
   drawMap(now);
 
