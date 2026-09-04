@@ -9,7 +9,7 @@
 
 import {
   hhmm, ss, duration, age, greyLineText, nextPassText, compass, bearing, mhz,
-  kpTrendText, bzText, spaceWeatherCaption, trim,
+  kpTrendText, bzText, spaceWeatherCaption, callsignLength, trim,
 } from '../js/render.js';
 
 let failures = 0;
@@ -239,6 +239,19 @@ check('stale and failing says both',
   spaceWeatherCaption({
     flux: { ok: false, at: hoursAgo }, kp: got(justNow), xray: got(justNow), wind: got(justNow),
   }, swxNow), '3 h old \u00b7 flux unreachable');
+
+// --- callsign sizing --------------------------------------------------------
+// The callsign is set at the clock's size, which only fits because most calls
+// are short. Settings accepts twelve characters, and a portable call at 3.6rem
+// would run straight out of a 270-point pane.
+check('a four-character call is short', callsignLength('KB4S'), 'short');
+check('and a five', callsignLength('W1AWX'), 'short');
+check('six steps down', callsignLength('VK9XYZ'), 'medium');
+check('eight is still medium', callsignLength('KB4S/QRP'), 'medium');
+check('nine steps down again', callsignLength('VK9/KB4S/'), 'long');
+check('the settings maximum is long', callsignLength('VK9NKB4SQRPX'), 'long');
+check('no callsign buckets safely', callsignLength(''), 'short');
+check('and so does a missing one', callsignLength(undefined), 'short');
 
 if (failures) {
   print(`\n${failures} check(s) failed.`);

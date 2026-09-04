@@ -1128,8 +1128,17 @@ changes; in normal flow it cannot. **The gear icon and the last column letter
 are the same hazard and are still live** — worth checking, though an icon
 overlapping a faint letter is a milder failure than two pieces of text.
 
-It is dimmer than the clock beneath it. The callsign is who, not what, and the
-display has one large number by design.
+It is **set at the clock's own size** and left in `--ink-mid` rather than
+`--ink`: large, but recessive. That looks like it breaks the display's "one
+large number" rule and does not. That rule is about numbers a reader has to
+parse; nobody reads their own callsign, they recognise it, so it can carry size
+without competing for attention the way a second clock would.
+
+Sized **by length**, because settings accepts twelve characters and `VK9/KB4S/P`
+at 3.6rem runs straight out of a 270-point pane. Four and five characters cover
+the great majority of calls and get the full size; six to eight and nine or more
+step down. The stylesheet's default is the cautious one, so a missing attribute
+cannot overflow.
 
 Hidden rather than emptied when there is no callsign, since a callsign is
 optional and an empty paragraph in normal flow still takes its margin — which

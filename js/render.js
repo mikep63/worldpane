@@ -293,9 +293,24 @@ function setTile(id, entry, format, band) {
   tile.dataset.band = entry.ok ? band(entry.value) : 'unknown';
 }
 
+/**
+ * Buckets a callsign by length, for the stylesheet to size.
+ *
+ * Four and five characters cover the great majority of calls and get the
+ * clock's own size. Beyond that it steps down, because settings accepts twelve
+ * and a portable call with two slashes would otherwise run out of the pane.
+ */
+export function callsignLength(callsign) {
+  const n = (callsign || '').length;
+  if (n <= 5) return 'short';
+  if (n <= 8) return 'medium';
+  return 'long';
+}
+
 export function renderCallsign(callsign) {
   const el = $('callsign');
   el.textContent = callsign || '';
+  el.dataset.len = callsignLength(callsign);
   // Hidden rather than empty. A callsign is optional, and an empty paragraph in
   // normal flow still takes its margin -- which over the map cost nothing and in
   // the strip would push the clock off centre for anyone who left it blank.

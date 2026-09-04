@@ -226,16 +226,34 @@ body {
 .tile[data-band="storm"]     .big { color: var(--storm); }
 .tile[data-band="unknown"]   .big { color: var(--ink-dim); }
 
-/* Heads the strip, above the Time pane's own label. Dimmer than the clock it
-   sits over: it is who, not what, and it must not compete with the one large
-   number on the display. */
+/* Heads the strip, above the Time pane's own label, and set as large as the
+   clock beneath it.
+   
+   That looks like it breaks "one large number on the display", and it does not:
+   that rule is about numbers a reader has to parse. Nobody reads their own
+   callsign, they recognise it, so it can carry size without competing for
+   attention the way a second clock would. It stays in --ink-mid rather than
+   --ink for the same reason -- large, but recessive.
+   
+   Sized by length, because settings accepts twelve characters and VK9/KB4S/P at
+   the clock's size runs straight out of a 270-point pane. render.js buckets it;
+   the default here is the cautious one, so an unset attribute cannot overflow. */
 .callsign {
   margin: 0 0 0.35rem;
-  font-size: 0.85rem;
+  font-size: clamp(1.3rem, 4vh, 2rem);
   font-weight: 600;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.04em;
+  line-height: 1;
   color: var(--ink-mid);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
+
+/* Four or five characters -- the great majority of calls -- get the clock's own
+   size, which is what was asked for and what fits. */
+.callsign[data-len="short"] { font-size: clamp(2.2rem, 7vh, 3.6rem); }
+.callsign[data-len="medium"] { font-size: clamp(1.6rem, 5vh, 2.6rem); }
 
 .gear {
   position: absolute;
