@@ -143,25 +143,14 @@ body {
   color: var(--ink-dim);
 }
 
-/* Both bottom corners get the same treatment, so they read as one footer rather
-   than two things that happen to be near the edge. The wash replaces the
-   callsign's old text-shadow: a shadow is legible over ocean and not over a
-   coastline, and the callsign now sits low enough to meet one. */
-.map-wrap .caption,
-.map-wrap .callsign {
+.map-wrap .caption {
   position: absolute;
+  right: 0.6rem;
   bottom: 0.4rem;
   background: color-mix(in srgb, var(--bg) 70%, transparent);
   padding: 0.1rem 0.4rem;
   border-radius: 3px;
 }
-
-.map-wrap .caption { right: 0.6rem; }
-
-/* Inset past the Maidenhead row letters, which are drawn about three points
-   from the left edge in a twelve-point face. Anything under 1.2rem lands on
-   them again. */
-.map-wrap .callsign { left: 1.6rem; }
 
 .strip {
   flex: 1 1 auto;
@@ -237,8 +226,11 @@ body {
 .tile[data-band="storm"]     .big { color: var(--storm); }
 .tile[data-band="unknown"]   .big { color: var(--ink-dim); }
 
+/* Heads the strip, above the Time pane's own label. Dimmer than the clock it
+   sits over: it is who, not what, and it must not compete with the one large
+   number on the display. */
 .callsign {
-  margin: 0;
+  margin: 0 0 0.35rem;
   font-size: 0.85rem;
   font-weight: 600;
   letter-spacing: 0.12em;

@@ -294,7 +294,12 @@ function setTile(id, entry, format, band) {
 }
 
 export function renderCallsign(callsign) {
-  $('callsign').textContent = callsign || '';
+  const el = $('callsign');
+  el.textContent = callsign || '';
+  // Hidden rather than empty. A callsign is optional, and an empty paragraph in
+  // normal flow still takes its margin -- which over the map cost nothing and in
+  // the strip would push the clock off centre for anyone who left it blank.
+  el.hidden = !callsign;
 }
 
 export function renderMapCaption(text) {

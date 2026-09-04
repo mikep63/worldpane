@@ -18,18 +18,18 @@
 <main id="dashboard" hidden>
   <div class="map-wrap">
     <canvas id="map" aria-label="World map with the day and night terminator"></canvas>
-    <!--
-    The two bottom corners: whose shack this is, and where the sun is. The
-    callsign was top-left until 2026-09-04, which is where the Maidenhead row
-    and column letters both begin. See DESIGN.md, "The map's two bottom
-    corners".
-    -->
-    <p class="callsign" id="callsign"></p>
     <p id="map-caption" class="caption"></p>
   </div>
 
   <div class="strip">
     <section class="group" aria-labelledby="lbl-time">
+      <!--
+      Whose shack this is, heading the strip. It lived over the map until
+      2026-09-04 and collided with the Maidenhead letters there; in normal flow
+      it cannot collide with anything. See DESIGN.md, "The callsign is not a
+      map label".
+      -->
+      <p class="callsign" id="callsign" hidden></p>
       <h2 id="lbl-time" class="label">Time</h2>
       <p class="big num"><span id="utc">--:--</span><span class="sec" id="utc-sec">:--</span></p>
       <p class="sub">UTC</p>

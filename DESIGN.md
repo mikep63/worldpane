@@ -1108,27 +1108,32 @@ that requires reading a label to interpret a number.
 It also runs for months at a time, so nothing may accumulate — no unbounded
 arrays, no growing DOM, no leak that shows up on day forty.
 
-## The map's two bottom corners · 2026-09-04
+## The callsign is not a map label · 2026-09-04
 
-The callsign sits bottom-left and the subsolar caption bottom-right: whose shack
-this is, and where the sun is. They share a background wash so they read as one
-footer rather than two things that happen to be near an edge.
+The callsign heads the strip, above the Time pane's own label. The map carries
+only things about the map.
 
-The callsign was **top-left** from the first slice, which turned out to be the
-one corner it could not have. The Maidenhead field letters run the full width of
-the top edge and the full height of the left, so both runs converge there and
-the callsign was overprinting them — visible from the day the field grid shipped
-on 2026-09-02, and not noticed until a photograph of the wall.
+It was **top-left over the map** from the first slice, which is the one corner
+it could not have: the Maidenhead field letters run the full width of the top
+edge and the full height of the left, so both runs converge there and the
+callsign overprinted them. That was true from the day the field grid shipped on
+2026-09-02 and went unnoticed until a photograph of the wall.
 
-The **bottom edge carries no labels at all**, since `drawFieldLabels` only draws
-along the top and the left. That makes it the only clear edge on the map, and
-the caption was already using half of it.
+The first fix moved it to the **bottom-left of the map**, paired with the
+subsolar caption, the bottom being the only edge `drawFieldLabels` leaves clear.
+That was replaced the same day by the better answer, which is that the callsign
+should not be positioned over the canvas at all. Text absolutely positioned over
+something that draws its own labels will collide again whenever either side
+changes; in normal flow it cannot. **The gear icon and the last column letter
+are the same hazard and are still live** — worth checking, though an icon
+overlapping a faint letter is a milder failure than two pieces of text.
 
-Inset 1.6rem from the left rather than the caption's 0.6rem from the right,
-because the row letters are drawn about three points in, in a twelve-point face;
-anything under about 1.2rem lands back on them. The wash also replaces the
-callsign's old text shadow, which was legible over ocean and not over a
-coastline — and the bottom-left of a world map is Southern Ocean until it isn't.
+It is dimmer than the clock beneath it. The callsign is who, not what, and the
+display has one large number by design.
+
+Hidden rather than emptied when there is no callsign, since a callsign is
+optional and an empty paragraph in normal flow still takes its margin — which
+over the map cost nothing and here would push the clock off centre.
 
 ## Map on top, numbers underneath · 2026-08-28
 
